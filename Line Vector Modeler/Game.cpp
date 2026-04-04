@@ -6,7 +6,7 @@ Game::Game()
 
 	LogicID = EM.AddCommon(Logic = DBG_NEW GameLogic());
 	//BackGroundID = Managers.EM.AddCommon(BackGround = DBG_NEW TheBackground());
-	PlayerID = EM.AddLineModel(Player = DBG_NEW ThePlayer());
+	//PlayerID = EM.AddLineModel(Player = DBG_NEW ThePlayer());
 }
 
 Game::~Game()
@@ -19,12 +19,12 @@ bool Game::Initialize() //Initialize
 
 	//BackGround->Initialize();
 	Logic->Initialize();
-	Player->Initialize();
+	//Player->Initialize();
 
 	float multi = 1.0f;
 	FieldSize = { GetScreenWidth() * multi, (float)GetScreenHeight() };
 
-	Logic->SetPlayer(Player);
+	//Logic->SetPlayer(Player);
 
 	//Any Entities added after this point need this method fired manually.
 

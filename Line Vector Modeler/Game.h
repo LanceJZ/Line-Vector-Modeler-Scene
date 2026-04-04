@@ -28,10 +28,10 @@ private:
 
 	size_t LogicID = 0;
 	size_t BackGroundID = 0;
-	size_t PlayerID = 0;
+	//size_t PlayerID = 0;
 	size_t EnemiesID = 0;
 
 	//When adding classes to EM, must be heap pointer.
 	//TheBackground* BackGround = {};
-	ThePlayer* Player = {};
+	//ThePlayer* Player = {};
 };

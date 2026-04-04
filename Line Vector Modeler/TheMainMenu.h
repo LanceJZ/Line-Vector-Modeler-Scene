@@ -6,8 +6,9 @@
 
 struct LoadedLineModels
 {
-	std::vector<LineModel*> Models = {};
-	std::vector<std::string> Names = {};
+	LineModel *Model = {};
+	std::string Name = {};
+	size_t IDNumber = 0;
 };
 
 class TheMainMenu : public Common
@@ -53,6 +54,9 @@ private:
 
 	Rectangle TextInputBoxLocation = { 0, 0, 0, 0 };
 
+	std::vector<Vector3> CursorModel = {};
+	std::vector<Vector3> CrosshairModel = {};
+
 	LineModel* Crosshair = {};
 	LineModel* Cursor = {};
 	ThePlayer* Player = {};
@@ -60,9 +64,10 @@ private:
 	std::vector<LoadedLineModels> LoadedModels = {};
 
 	void DrawUI();
+	void ResetModels();
 	void ResetViewport();
 	void NewScene();
-	void NewModel();
+	void MakeNewModel();
 	void LoadScene();
 	void SaveScene();
 	void SaveAsInputBox();

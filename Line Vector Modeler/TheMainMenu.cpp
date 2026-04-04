@@ -3,8 +3,6 @@
 
 TheMainMenu::TheMainMenu()
 {
-	EM.AddLineModel(Crosshair = DBG_NEW LineModel());
-	EM.AddLineModel(Cursor = DBG_NEW LineModel());
 }
 
 TheMainMenu::~TheMainMenu()
@@ -20,16 +18,16 @@ bool TheMainMenu::Initialize()
 {
 	Common::Initialize();
 
-	Crosshair->Initialize();
-	Cursor->Initialize();
 
 	return false;
 }
 
 bool TheMainMenu::Load()
 {
-	Crosshair->SetModel(CM.LoadAndGetLineModel("Cross"));
-	Cursor->SetModel(CM.LoadAndGetLineModel("Cursor"));
+	CrosshairModel = CM.LoadAndGetLineModel("Cross");
+	CursorModel = CM.LoadAndGetLineModel("Cursor");
+
+	ResetModels();
 
 	return true;
 }
@@ -43,14 +41,6 @@ bool TheMainMenu::BeginRun()
 
 	GuiLoadStyleDark();
 	GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
-
-	Crosshair->HideCollision = true;
-	Crosshair->Alpha = 128;
-	Crosshair->ModelColor = GRAY;
-
-	Cursor->HideCollision = true;
-	Cursor->Alpha = 200;
-	Cursor->ModelColor = LIGHTGRAY;
 
 	TextInputBoxLocation = { (float)GetScreenWidth() / 2 - 120, (float)GetScreenHeight() / 2 - 60, 240, 140 };
 
@@ -121,11 +111,13 @@ void TheMainMenu::Update()
 
 void TheMainMenu::DrawUI()
 {
-	if (FileNameInput[0])
-	{
-		GuiLabel({ 1150, 10, 200, 30 }, FileNameInput);
-	}
+	std::string x = "X: " + std::to_string(Crosshair->Position.x);
+	std::string y = "Y: " + std::to_string(Crosshair->Position.y);
+	
+	GuiLabel({ 500, 900, 200, 40 }, x.c_str());
+	GuiLabel({ 500 + 200, 900, 200, 40 }, y.c_str());
 
+	if (FileNameInput[0]) GuiLabel({ 1150, 10, 200, 30 }, FileNameInput);
 
 	Rectangle buttonSave = { 100, 10, 90, 30 };
 	Rectangle buttonLoad = { buttonSave.x + 100, 10, buttonSave.width, buttonSave.height };
@@ -142,7 +134,7 @@ void TheMainMenu::DrawUI()
 	{
 		if (GuiButton(buttonSave, GuiIconText(ICON_FILE_SAVE, "  Save"))) SaveFile();
 		if (GuiButton(buttonSaveAs, GuiIconText(ICON_FILE_SAVE, " Save as"))) ShowSaveTextInputBox = true;
-		if (GuiButton(buttonNew, GuiIconText(ICON_FILE_NEW, "  New"))) NewModel();
+		if (GuiButton(buttonNew, GuiIconText(ICON_FILE_NEW, "  New"))) MakeNewModel();
 		if (GuiButton(buttonReset, GuiIconText(ICON_FILE_NEW, "Reset"))) ResetViewport();
 	}
 
@@ -219,11 +211,32 @@ void TheMainMenu::DrawUI()
 	Rectangle buttonPreviousModel = { buttonNextModel.x, buttonNextModel.y + 40, buttonNextModel.width, buttonNextModel.height };
 
 	
-	if (LoadedLineModels().Models.size() > 1)
+	if (LoadedModels.size() > 0)
 	{
 		if (GuiButton(buttonNextModel, GuiIconText(ICON_ARROW_RIGHT, "  Next"))) NextModel();
 		if (GuiButton(buttonPreviousModel, GuiIconText(ICON_ARROW_LEFT, "Previous"))) PreviousModel();
 	}
+}
+
+void TheMainMenu::ResetModels()
+{
+	EM.AddLineModel(Crosshair = DBG_NEW LineModel());
+	EM.AddLineModel(Cursor = DBG_NEW LineModel());
+	EM.AddLineModel(Player = DBG_NEW ThePlayer());
+
+	Crosshair->SetModel(CrosshairModel);
+	Cursor->SetModel(CursorModel);
+
+	Crosshair->Initialize();
+	Cursor->Initialize();
+
+	Crosshair->HideCollision = true;
+	Crosshair->Alpha = 128;
+	Crosshair->ModelColor = GRAY;
+
+	Cursor->HideCollision = true;
+	Cursor->Alpha = 200;
+	Cursor->ModelColor = LIGHTGRAY;
 }
 
 void TheMainMenu::ResetViewport()
@@ -246,16 +259,22 @@ void TheMainMenu::ResetViewport()
 void TheMainMenu::NewScene()
 {
 	ResetViewport();
+
+	EM.DeleteEntities();
+
 	LoadedModels.clear();
+
+	ResetModels();
 }
 
-void TheMainMenu::NewModel()
+void TheMainMenu::MakeNewModel()
 {
 	LoadedModels.push_back(LoadedLineModels());
-	LoadedModels.back().Models.push_back(new LineModel());
-	LoadedModels.back().Models.back()->SetModel(Player->GetLineModel());
-	LoadedModels.back().Models.back()->Position = Player->Position;
-	LoadedModels.back().Names.push_back(FileNameInput);
+	LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
+	LoadedModels.back().Model->Position = Player->Position;
+	LoadedModels.back().Model->HideCollision = true;
+	LoadedModels.back().Model->ModelColor = BLUE;
+	LoadedModels.back().Name = FileNameInput;
 	ResetViewport();
 }
 
@@ -463,10 +482,11 @@ void TheMainMenu::PreviousModel()
 
 void TheMainMenu::UpdateTextBoxesAndCursor()
 {
-	if (Player->GetLineModel().size() > 0) Cursor->Position = Player->GetLineModel()[CursurIndex] * Player->Scale;
+	if (Player->GetLineModel().size() > 0) Cursor->Position = Player->Position + Player->GetLineModel()[CursurIndex] * Player->Scale;
 	TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 	TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());	
 	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
+	Crosshair->Position = Player->Position;
 }
 
 void TheMainMenu::DrawMirrorUI()

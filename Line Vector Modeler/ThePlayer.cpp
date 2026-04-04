@@ -246,18 +246,25 @@ void ThePlayer::Gamepad()
 
 void ThePlayer::Keyboard()
 {
-	if (IsKeyDown(KEY_RIGHT))
+	if (IsKeyPressed(KEY_RIGHT))
 	{
+		Position.x += 1.0f;
 	}
-	else if (IsKeyDown(KEY_LEFT))
+	else if (IsKeyPressed(KEY_LEFT))
 	{
+		Position.x -= 1.0f;
 	}
 	else
 	{
 	}
 
-	if (IsKeyDown(KEY_UP))
+	if (IsKeyPressed(KEY_UP))
 	{
+		Position.y -= 1.0f;
+	}
+	else if (IsKeyPressed(KEY_DOWN))
+	{
+		Position.y += 1.0f;
 	}
 	else
 	{
