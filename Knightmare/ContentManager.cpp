@@ -39,6 +39,11 @@ bool ContentManager::BeginRun()
 	return true;
 }
 
+void ContentManager::ResetLineModels()
+{
+	LoadedLineModels.clear();
+}
+
 size_t ContentManager::LoadTheModel(std::string modelFileName)
 {
 	LoadedModels.push_back(LoadModelWithTexture(modelFileName));

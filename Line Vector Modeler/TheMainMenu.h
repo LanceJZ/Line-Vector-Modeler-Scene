@@ -31,10 +31,10 @@ private:
 	bool TextBoxScaleEditMode = false;
 	bool TextBoxPointEditMode = false;
 	bool textBoxEditMode = false;
-	bool ShowLoadTextInputBox = false;
-	bool ShowSaveTextInputBox = false;
+	bool ShowLoadTextInput = false;
+	bool ShowSaveTextInput = false;
 	bool ShowLoadErrorMessage = false;
-	bool LoadSceneButtonHit = false;
+	bool ShowLoadSceneTextInput = false;
 	bool CollisionCheckBox = false;
 	bool MirrorCheckBox = false;
 	bool SaveModelFile = false;
@@ -53,6 +53,7 @@ private:
 
 	char ModelFileNameInput[256] = { 0 };
 	char SceneFileNameInput[256] = { 0 };
+	char MessageBoxText[256] = { 0 };
 
 	const char* TextOkCancel = "Ok;Cancel";
 
@@ -78,7 +79,8 @@ private:
 	void SaveAsInputBox();
 	void SaveModel();
 	void SaveScene();
-	void LoadInputBox();
+	void LoadModelInputBox();
+	void LoadSceneInputBox();
 	void MakeNewPoint();
 	void MovePoint();
 	void DeletePoint();

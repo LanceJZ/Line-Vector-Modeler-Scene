@@ -57,9 +57,11 @@ void TheMainMenu::Update()
 	DrawUI();
 
 
-	if (ShowLoadTextInputBox) LoadInputBox();
+	if (ShowLoadTextInput) LoadModelInputBox();
 
-	if (ShowSaveTextInputBox) SaveAsInputBox();
+	if (ShowLoadSceneTextInput) LoadSceneInputBox();
+
+	if (ShowSaveTextInput) SaveAsInputBox();
 
 	if (MirrorCheckBox) Mirror();
 
@@ -127,17 +129,17 @@ void TheMainMenu::DrawUI()
 	Rectangle buttonLoadScene = { buttonNewScene.x + 130, 10, buttonNewScene.width + 10, buttonSave.height };
 	Rectangle buttonSaveScene = { buttonLoadScene.x + 140, 10, buttonLoadScene.width, buttonSave.height };
 
-	if (GuiButton(buttonLoad, GuiIconText(ICON_FILE_OPEN, "  Load"))) ShowLoadTextInputBox = true;
+	if (GuiButton(buttonLoad, GuiIconText(ICON_FILE_OPEN, "  Load"))) ShowLoadTextInput = true;
 
 	if (Player->GetLineModel().size() > 0)
 	{
 		if (GuiButton(buttonSave, GuiIconText(ICON_FILE_SAVE, "  Save"))) SaveModel();
-		if (GuiButton(buttonSaveAs, GuiIconText(ICON_FILE_SAVE, " Save as"))) ShowSaveTextInputBox = true;
+		if (GuiButton(buttonSaveAs, GuiIconText(ICON_FILE_SAVE, " Save as"))) ShowSaveTextInput = true;
 		if (GuiButton(buttonNew, GuiIconText(ICON_FILE_NEW, "  New"))) MakeNewModel();
 		if (GuiButton(buttonReset, GuiIconText(ICON_FILE_NEW, "Reset"))) ResetViewport();
 	}
 
-	if (GuiButton(buttonLoadScene, GuiIconText(ICON_FILE_OPEN, "Load scene"))) LoadSceneButtonHit = true;
+	if (GuiButton(buttonLoadScene, GuiIconText(ICON_FILE_OPEN, "Load scene"))) ShowLoadSceneTextInput = true;
 
 	if (LoadedModels.size() > 0)
 	{
@@ -220,6 +222,10 @@ void TheMainMenu::DrawUI()
 
 void TheMainMenu::ResetModels()
 {
+	LoadedModels.clear();
+
+	EM.DeleteEntities();
+
 	EM.AddLineModel(Crosshair = DBG_NEW LineModel());
 	EM.AddLineModel(Cursor = DBG_NEW LineModel());
 	EM.AddLineModel(Player = DBG_NEW ThePlayer());
@@ -259,11 +265,6 @@ void TheMainMenu::ResetViewport()
 void TheMainMenu::NewScene()
 {
 	ResetViewport();
-
-	EM.DeleteEntities();
-
-	LoadedModels.clear();
-
 	ResetModels();
 }
 
@@ -282,6 +283,7 @@ void TheMainMenu::MakeNewModel()
 
 void TheMainMenu::LoadModel(std::string fileName)
 {
+	ResetViewport();
 	Player->SetModel(CM.LoadAndGetLineModel(fileName));
 	CursurIndex = Player->GetLineModel().size() - 1;
 	Cursor->Position = Player->GetLineModel()[CursurIndex];
@@ -297,12 +299,10 @@ void TheMainMenu::LoadScene()
 	fileNameSTR.append(SceneFileNameInput);
 	fileNameSTR.append(".scn");
 
-	std::string sceneSTR = LoadFileText(fileNameSTR.c_str());
-
 	if (FileExists(fileNameSTR.c_str()))
 	{
-		EM.DeleteEntities();
-		LoadedModels.clear();
+		std::string sceneSTR = LoadFileText(fileNameSTR.c_str());
+		ResetModels();
 		ResetViewport();
 
 		std::vector<Vector3> positions;
@@ -315,8 +315,6 @@ void TheMainMenu::LoadScene()
 
 		for (const auto& character : sceneSTR)
 		{
-			if (character == ';') foundName = true;
-
 			if (character == '}')
 			{
 				names.push_back(name);
@@ -328,9 +326,41 @@ void TheMainMenu::LoadScene()
 			{
 				name.append(1, character);
 			}
+
+			if (character == ';') foundName = true;
 		}
 
+		if (names.size() != positions.size())
+		{
+			ShowLoadErrorMessage = true;
+			TextCopy(MessageBoxText, "Invalid Scene File");
+			return;
+		}
 
+		Player->SetModel(CM.LoadAndGetLineModel(names[0]));
+		Player->Position = positions[0];
+		TextCopy(ModelFileNameInput, names[0].c_str());
+
+		CursurIndex = Player->GetLineModel().size() - 1;
+		Cursor->Position = Player->GetLineModel()[CursurIndex];
+		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
+		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
+		TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
+
+		for (size_t i = 1; i < positions.size(); i++)  
+		{
+			LoadedModels.push_back(LoadedLineModels());
+			LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), CM.LoadAndGetLineModel(names[i]));
+			LoadedModels.back().Model->Position = positions[i];
+			LoadedModels.back().Model->HideCollision = true;
+			LoadedModels.back().Model->ModelColor = BLUE;
+			LoadedModels.back().Name = names[i];
+		}
+	}
+	else
+	{
+		ShowLoadErrorMessage = true;
+		TextCopy(MessageBoxText, SceneFileNameInput);
 	}
 }
 
@@ -362,7 +392,7 @@ void TheMainMenu::SaveAsInputBox()
 	if ((result == 0) || (result == 1) || (result == 2))
 	{
 		TextCopy(TextInput, "\0");
-		ShowSaveTextInputBox = false;
+		ShowSaveTextInput = false;
 		Player->Enabled = true;
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
@@ -376,7 +406,7 @@ void TheMainMenu::SaveModel()
 	// If there is no file name, open the input box to get file name, return.
 	if (!ModelFileNameInput[0])
 	{
-		ShowSaveTextInputBox = true;
+		ShowSaveTextInput = true;
 		SaveModelFile = true;
 		SaveSceneFile = false;
 		return;
@@ -416,7 +446,7 @@ void TheMainMenu::SaveScene()
 
 	if (!SceneFileNameInput[0])
 	{
-		ShowSaveTextInputBox = true;
+		ShowSaveTextInput = true;
 		SaveSceneFile = true;
 		SaveModelFile = false;
 		return;
@@ -434,9 +464,9 @@ void TheMainMenu::SaveScene()
 
 	sceneDataSTR.append("{(X:");
 	sceneDataSTR.append(std::to_string(Player->Position.x));
-	sceneDataSTR.append(" Y:");
+	sceneDataSTR.append(",Y:");
 	sceneDataSTR.append(std::to_string(Player->Position.y));
-	sceneDataSTR.append(" Z:");
+	sceneDataSTR.append(",Z:");
 	sceneDataSTR.append(std::to_string(Player->Position.z));
 	sceneDataSTR.append(") Name;");
 	sceneDataSTR.append(ModelFileNameInput);
@@ -446,9 +476,9 @@ void TheMainMenu::SaveScene()
 	{
 		sceneDataSTR.append("{(X:");
 		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.x));
-		sceneDataSTR.append(" Y:");
+		sceneDataSTR.append(",Y:");
 		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.y));
-		sceneDataSTR.append(" Z:");
+		sceneDataSTR.append(",Z:");
 		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.z));
 		sceneDataSTR.append(") Name:");
 		sceneDataSTR.append(LoadedModels[i].Name);
@@ -462,7 +492,7 @@ void TheMainMenu::SaveScene()
 	SaveSceneFile = false;
 }
 
-void TheMainMenu::LoadInputBox()
+void TheMainMenu::LoadModelInputBox()
 {
 	Player->Enabled = false;
 	Crosshair->Enabled = false;
@@ -480,18 +510,59 @@ void TheMainMenu::LoadInputBox()
 		if (!FileExists(nameVEC.c_str()))
 		{
 			ShowLoadErrorMessage = true;
-			ShowLoadTextInputBox = false;
+			ShowLoadTextInput = false;
+			TextCopy(MessageBoxText, TextInput);
+			TextCopy(TextInput, "\0");
 			return;
 		}
 
-		ResetViewport();
 		TextCopy(ModelFileNameInput, TextInput);
 		LoadModel(ModelFileNameInput);
 	}
 
 	if ((result == 0) || (result == 1) || (result == 2))
 	{
-		ShowLoadTextInputBox = false;
+		ShowLoadTextInput = false;
+		TextCopy(TextInput, "\0");
+		Player->Enabled = true;
+		Cursor->Enabled = true;
+		Crosshair->Enabled = true;
+		CollisionCheckBox = false;
+	}
+}
+
+void TheMainMenu::LoadSceneInputBox()
+{
+	Player->Enabled = false;
+	Crosshair->Enabled = false;
+	Cursor->Enabled = false;
+
+	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
+	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_OPEN, "Load file"), "File name:", TextOkCancel, TextInput, 255, NULL);
+
+	if (result == 1)
+	{
+		std::string nameVEC = "Scenes/";
+		nameVEC.append(TextInput);
+		nameVEC.append(".scn");
+
+		if (!FileExists(nameVEC.c_str()))
+		{
+			ShowLoadErrorMessage = true;
+			ShowLoadTextInput = false;
+			TextCopy(MessageBoxText, TextInput);
+			TextCopy(TextInput, "\0");
+			return;
+		}
+
+		ResetViewport();
+		TextCopy(SceneFileNameInput, TextInput);
+		LoadScene();
+	}
+
+	if ((result == 0) || (result == 1) || (result == 2))
+	{
+		ShowLoadSceneTextInput = false;
 		TextCopy(TextInput, "\0");
 		Player->Enabled = true;
 		Cursor->Enabled = true;
@@ -610,16 +681,17 @@ void TheMainMenu::DrawMirrorUI()
 
 void TheMainMenu::DrawLoadErrorMessage()
 {
-	std::string msg = "The model file (";
-	msg.append(TextInput);
+	std::string msg = "The file (";
+	msg.append(MessageBoxText);
 	msg.append(") you attempted to load was not found.");
 
-	int result = GuiMessageBox({ (float)GetScreenWidth() / 4, (float)GetScreenHeight() / 2.5f, 550, 100 }, "File Not found.", msg.c_str(), "Oh no;Not again");
+	int size = msg.size();
+
+	int result = GuiMessageBox({ (float)GetScreenWidth() / 4, (float)GetScreenHeight() / 2.5f, (float)size * 10, 100 }, "File Not found.", msg.c_str(), "Oh no;Not again");
 
 	if (result >= 0)
 	{
 		ShowLoadErrorMessage = false;
-		TextCopy(TextInput, "\0");
 		Player->Enabled = true;
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;

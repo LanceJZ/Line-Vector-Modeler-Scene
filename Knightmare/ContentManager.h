@@ -13,6 +13,8 @@ public:
 	bool Initialize();
 	bool BeginRun();
 
+	void ResetLineModels();
+
 	size_t LoadTheModel(std::string modelFileName); //Without path or ext.
 	size_t LoadTheLineModel(std::string modelFileName); //Without path or ext.
 	size_t LoadTheSound(std::string soundFileName); //Without path or ext.
