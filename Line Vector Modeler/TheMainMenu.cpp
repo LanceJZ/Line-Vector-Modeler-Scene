@@ -266,6 +266,7 @@ void TheMainMenu::NewScene()
 {
 	ResetViewport();
 	ResetModels();
+	TextCopy(SceneFileNameInput, "\0");
 }
 
 void TheMainMenu::MakeNewModel()
@@ -283,7 +284,6 @@ void TheMainMenu::MakeNewModel()
 
 void TheMainMenu::LoadModel(std::string fileName)
 {
-	ResetViewport();
 	Player->SetModel(CM.LoadAndGetLineModel(fileName));
 	CursurIndex = Player->GetLineModel().size() - 1;
 	Cursor->Position = Player->GetLineModel()[CursurIndex];
@@ -315,7 +315,7 @@ void TheMainMenu::LoadScene()
 
 		for (const auto& character : sceneSTR)
 		{
-			if (character == '}')
+			if (character == ':')
 			{
 				names.push_back(name);
 				name.clear();
@@ -330,7 +330,14 @@ void TheMainMenu::LoadScene()
 			if (character == ';') foundName = true;
 		}
 
-		if (names.size() != positions.size())
+		bool fileTest = true;
+
+		for (auto& name : names)
+		{
+			if (name.size() == 0) fileTest = false;
+		}
+
+		if (names.size() != positions.size() || !fileTest)
 		{
 			ShowLoadErrorMessage = true;
 			TextCopy(MessageBoxText, "Invalid Scene File");
@@ -342,7 +349,8 @@ void TheMainMenu::LoadScene()
 		TextCopy(ModelFileNameInput, names[0].c_str());
 
 		CursurIndex = Player->GetLineModel().size() - 1;
-		Cursor->Position = Player->GetLineModel()[CursurIndex];
+		Cursor->Position = Player->GetLineModel()[CursurIndex] + Player->Position;
+		Crosshair->Position = Player->Position;
 		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
 		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 		TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
@@ -424,13 +432,13 @@ void TheMainMenu::SaveModel()
 
 	for (int i = 0; i < Player->GetLineModel().size(); i++)
 	{
-		modelPointsSTR.append("{X:");
+		modelPointsSTR.append("(");
 		modelPointsSTR.append(std::to_string(Player->GetLineModel()[i].x));
-		modelPointsSTR.append(" Y:");
+		modelPointsSTR.append(", ");
 		modelPointsSTR.append(std::to_string(Player->GetLineModel()[i].y));
-		modelPointsSTR.append(" Z:");
+		modelPointsSTR.append(", ");
 		modelPointsSTR.append(std::to_string(Player->GetLineModel()[i].z));
-		modelPointsSTR.append("}");
+		modelPointsSTR.append(")");
 	}
 
 	char * linePoints = new char[modelPointsSTR.length() + 1];
@@ -442,7 +450,7 @@ void TheMainMenu::SaveModel()
 
 void TheMainMenu::SaveScene()
 {
-	if (ModelFileNameInput[0] || Player->GetLineModel().size() < 1) return;
+	if (!ModelFileNameInput[0] || Player->GetLineModel().size() < 1) return;
 
 	if (!SceneFileNameInput[0])
 	{
@@ -462,27 +470,34 @@ void TheMainMenu::SaveScene()
 
 	std::string sceneDataSTR;
 
-	sceneDataSTR.append("{(X:");
+	sceneDataSTR.append("(");
 	sceneDataSTR.append(std::to_string(Player->Position.x));
-	sceneDataSTR.append(",Y:");
+	sceneDataSTR.append(", ");
 	sceneDataSTR.append(std::to_string(Player->Position.y));
-	sceneDataSTR.append(",Z:");
+	sceneDataSTR.append(", ");
 	sceneDataSTR.append(std::to_string(Player->Position.z));
-	sceneDataSTR.append(") Name;");
-	sceneDataSTR.append(ModelFileNameInput);
-	sceneDataSTR.append("}");
+	sceneDataSTR.append(")");
 	
 	for (int i = 0; i < LoadedModels.size(); i++)
 	{
-		sceneDataSTR.append("{(X:");
+		sceneDataSTR.append("(");
 		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.x));
-		sceneDataSTR.append(",Y:");
+		sceneDataSTR.append(", ");
 		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.y));
-		sceneDataSTR.append(",Z:");
+		sceneDataSTR.append(", ");
 		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.z));
-		sceneDataSTR.append(") Name:");
+		sceneDataSTR.append(")");
+	}
+
+	sceneDataSTR.append("Name;");
+	sceneDataSTR.append(ModelFileNameInput);
+	sceneDataSTR.append(":");
+
+	for (int i = 0; i < LoadedModels.size(); i++)
+	{
+		sceneDataSTR.append("Name;");
 		sceneDataSTR.append(LoadedModels[i].Name);
-		sceneDataSTR.append("}");
+		sceneDataSTR.append(":");
 	}
 
 	char * sceneData = new char[sceneDataSTR.length() + 1];
@@ -497,6 +512,11 @@ void TheMainMenu::LoadModelInputBox()
 	Player->Enabled = false;
 	Crosshair->Enabled = false;
 	Cursor->Enabled = false;
+
+	for (auto model : LoadedModels)
+	{
+		model.Model->Enabled = false;
+	}
 
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
 	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_OPEN, "Load file"), "File name:", TextOkCancel, TextInput, 255, NULL);
@@ -528,6 +548,11 @@ void TheMainMenu::LoadModelInputBox()
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
 		CollisionCheckBox = false;
+
+		for (auto model : LoadedModels)
+		{
+			model.Model->Enabled = true;
+		}
 	}
 }
 
@@ -536,6 +561,11 @@ void TheMainMenu::LoadSceneInputBox()
 	Player->Enabled = false;
 	Crosshair->Enabled = false;
 	Cursor->Enabled = false;
+
+	for (auto model : LoadedModels)
+	{
+		model.Model->Enabled = false;
+	}
 
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
 	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_OPEN, "Load file"), "File name:", TextOkCancel, TextInput, 255, NULL);
@@ -568,6 +598,11 @@ void TheMainMenu::LoadSceneInputBox()
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
 		CollisionCheckBox = false;
+
+		for (auto model : LoadedModels)
+		{
+			model.Model->Enabled = true;
+		}
 	}
 }
 
