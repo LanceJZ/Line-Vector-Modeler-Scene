@@ -25,6 +25,7 @@ public:
 	Sound LoadAndGetSound(std::string soundFileName); //Without path or ext.
 	Texture& GetTexture(size_t textureNumber);
 	Texture LoadAndGetTexture(std::string textureFileName); //Without path or ext.
+	std::vector<Vector3> ConvertStringToPointsNew(std::string linesString);
 
 private:
 	std::vector<Model> LoadedModels;
@@ -39,6 +40,6 @@ private:
 
 	std::vector<Vector3> LoadLineModel(std::string fileName);
 	std::vector<Vector3> ConvertStringToPoints(std::string linesString);
-	std::vector<Vector3> ConvertStringToPointsNew(std::string linesString);
+
 };
 

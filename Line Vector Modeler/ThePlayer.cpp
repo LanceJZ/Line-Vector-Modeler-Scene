@@ -82,12 +82,13 @@ void ThePlayer::NewGame()
 void ThePlayer::AddPoint(Vector3 point)
 {
 	LinePoints.push_back(point);
-	CalculateRadius();
+	if (LinePoints.size() > 2) CalculateRadius();
 }
 
 void ThePlayer::AddPointAt(Vector3 point, size_t index)
 {
-	LinePoints.insert(LinePoints.begin() + index, point);
+	if (LinePoints.size() == index) LinePoints.push_back(point);
+	else LinePoints.insert(LinePoints.begin() + index + 1, point);
 	CalculateRadius();
 }
 
@@ -246,37 +247,50 @@ void ThePlayer::Gamepad()
 
 void ThePlayer::Keyboard()
 {
-	if (IsKeyPressed(KEY_RIGHT))
+	if (IsKeyPressed(KEY_D))
 	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Position.x += 9.0f;
+			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.x += 10.0f;
+		}
+
 		Position.x += 1.0f;
 	}
-	else if (IsKeyPressed(KEY_LEFT))
+	else if (IsKeyPressed(KEY_A))
 	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Position.x -= 9.0f;
+			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.x -= 10.0f;
+
+		}
+
 		Position.x -= 1.0f;
 	}
 	else
 	{
 	}
 
-	if (IsKeyPressed(KEY_UP))
+	if (IsKeyPressed(KEY_W))
 	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Position.y -= 9.0f;
+			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.y -= 10.0f;
+		}
+
 		Position.y -= 1.0f;
 	}
-	else if (IsKeyPressed(KEY_DOWN))
+	else if (IsKeyPressed(KEY_S))
 	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Position.y += 9.0f;
+			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.y += 10.0f;
+		}
+
 		Position.y += 1.0f;
-	}
-	else
-	{
-	}
-
-	if (IsKeyPressed(KEY_RIGHT_CONTROL) || IsKeyPressed(KEY_LEFT_CONTROL) ||
-		IsKeyPressed(KEY_SPACE))
-	{
-	}
-
-	if (IsKeyDown(KEY_DOWN))
-	{
 	}
 	else
 	{

@@ -33,10 +33,14 @@ private:
 	bool textBoxEditMode = false;
 	bool ShowLoadTextInputBox = false;
 	bool ShowSaveTextInputBox = false;
+	bool ShowLoadErrorMessage = false;
 	bool LoadSceneButtonHit = false;
-	bool SaveSceneButtonHit = false;
 	bool CollisionCheckBox = false;
 	bool MirrorCheckBox = false;
+	bool SaveModelFile = false;
+	bool SaveSceneFile = false;
+	bool LoadModelFile = false;
+	bool LoadSceneFile = false;
 
 	size_t CursurIndex = 0;
 
@@ -47,7 +51,8 @@ private:
 
 	char TextInput[256] = { 0 };
 
-	char FileNameInput[256] = { 0 };
+	char ModelFileNameInput[256] = { 0 };
+	char SceneFileNameInput[256] = { 0 };
 
 	const char* TextOkCancel = "Ok;Cancel";
 
@@ -68,10 +73,11 @@ private:
 	void ResetViewport();
 	void NewScene();
 	void MakeNewModel();
+	void LoadModel(std::string fileName);
 	void LoadScene();
-	void SaveScene();
 	void SaveAsInputBox();
-	void SaveFile();
+	void SaveModel();
+	void SaveScene();
 	void LoadInputBox();
 	void MakeNewPoint();
 	void MovePoint();
@@ -88,6 +94,7 @@ private:
 	void UpdateTextBoxesAndCursor();
 
 	void DrawMirrorUI();
+	void DrawLoadErrorMessage();
 
 	bool CheckMirrorValidity();
 };
