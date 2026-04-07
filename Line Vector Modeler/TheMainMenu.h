@@ -43,6 +43,7 @@ private:
 	bool LoadSceneFile = false;
 
 	size_t CursurIndex = 0;
+	size_t SceneSize = 0;
 
 	char TextBoxScale[16] = "1.0";
 	char TextBoxXInput[16] = "0";
@@ -97,6 +98,7 @@ private:
 
 	void DrawMirrorUI();
 	void DrawLoadErrorMessage();
+	void KeybaordInput();
 
 	bool CheckMirrorValidity();
 };

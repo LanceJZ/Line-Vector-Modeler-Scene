@@ -54,6 +54,8 @@ void TheMainMenu::Update()
 {
 	Common::Update();
 
+	if (!ShowLoadSceneTextInput && !ShowLoadTextInput && !ShowSaveTextInput) KeybaordInput();
+
 	DrawUI();
 
 
@@ -69,27 +71,27 @@ void TheMainMenu::Update()
 
 	if (!TextBoxXEditMode)
 	{
-		if (TextBoxXInput[0] == '\0') return;
+		if (!TextBoxXInput[0]) return;
 
 		float x = std::stof(TextBoxXInput);
 
-		if (x > -1000.0f && x < 1000.0f) Cursor->Position.x = x;
+		if (x > -1000.0f && x < 1000.0f) Cursor->Position.x = x + Player->Position.x;
 
 	}
 
 	if (!TextBoxYEditMode)
 	{
-		if (TextBoxYInput[0] == '\0') return;
+		if (!TextBoxYInput[0]) return;
 
 		float y = std::stof(TextBoxYInput);
 
-		if (y > -1000.0f && y < 1000.0f) Cursor->Position.y = y;
+		if (y > -1000.0f && y < 1000.0f) Cursor->Position.y = y + Player->Position.y;
 
 	}
 
 	if (!TextBoxScaleEditMode)
 	{
-		if (TextBoxScale[0] == '\0') return;
+		if (!TextBoxScale[0]) return;
 
 		float scale = std::stof(TextBoxScale);
 
@@ -112,20 +114,23 @@ void TheMainMenu::Update()
 
 void TheMainMenu::DrawUI()
 {
+	std::string sceneName = "Scene: ";
+	sceneName.append(SceneFileNameInput);
+
+	if (SceneFileNameInput[0]) GuiLabel({ 1050, 10, 200, 30 }, sceneName.c_str());
+
 	std::string x = "X: " + std::to_string(Crosshair->Position.x);
 	std::string y = "Y: " + std::to_string(Crosshair->Position.y);
 	
 	GuiLabel({ 500, 900, 200, 40 }, x.c_str());
 	GuiLabel({ 500 + 200, 900, 200, 40 }, y.c_str());
 
-	if (ModelFileNameInput[0]) GuiLabel({ 1150, 10, 200, 30 }, ModelFileNameInput);
-
-	Rectangle buttonSave = { 100, 10, 90, 30 };
+	Rectangle buttonSave = { 50, 10, 85, 30 };
 	Rectangle buttonLoad = { buttonSave.x + 100, 10, buttonSave.width, buttonSave.height };
-	Rectangle buttonSaveAs = { buttonLoad.x + 100, 10, buttonSave.width + 20, buttonSave.height };
-	Rectangle buttonNew = { buttonLoad.x + 250, 10, buttonSave.width - 10, buttonSave.height };
-	Rectangle buttonReset = { buttonNew.x + 90, 10, buttonNew.width, buttonSave.height };
-	Rectangle buttonNewScene = { buttonReset.x + 100, 10, buttonSaveAs.width + 10, buttonSave.height };
+	Rectangle buttonSaveAs = { buttonLoad.x + 100, 10, buttonSave.width + 10, buttonSave.height };
+	Rectangle buttonNewModel = { buttonLoad.x + 220, 10, buttonSave.width + 40, buttonSave.height };
+	Rectangle buttonReset = { buttonNewModel.x + 140, 10, buttonSave.width, buttonSave.height };
+	Rectangle buttonNewScene = { buttonReset.x + 110, 10, buttonSaveAs.width + 25, buttonSave.height };
 	Rectangle buttonLoadScene = { buttonNewScene.x + 130, 10, buttonNewScene.width + 10, buttonSave.height };
 	Rectangle buttonSaveScene = { buttonLoadScene.x + 140, 10, buttonLoadScene.width, buttonSave.height };
 
@@ -134,9 +139,10 @@ void TheMainMenu::DrawUI()
 	if (Player->GetLineModel().size() > 0)
 	{
 		if (GuiButton(buttonSave, GuiIconText(ICON_FILE_SAVE, "  Save"))) SaveModel();
-		if (GuiButton(buttonSaveAs, GuiIconText(ICON_FILE_SAVE, " Save as"))) ShowSaveTextInput = true;
-		if (GuiButton(buttonNew, GuiIconText(ICON_FILE_NEW, "  New"))) MakeNewModel();
-		if (GuiButton(buttonReset, GuiIconText(ICON_FILE_NEW, "Reset"))) ResetViewport();
+		if (GuiButton(buttonSaveAs, GuiIconText(ICON_FILE_SAVE, "Save as"))) ShowSaveTextInput = true;
+		if (GuiButton(buttonNewModel, GuiIconText(ICON_FILE_NEW, "New Model"))) MakeNewModel();
+
+		if (LoadedModels.size() < 1) if (GuiButton(buttonReset, GuiIconText(ICON_FILE_NEW, " Reset"))) ResetViewport();
 	}
 
 	if (GuiButton(buttonLoadScene, GuiIconText(ICON_FILE_OPEN, "Load scene"))) ShowLoadSceneTextInput = true;
@@ -212,7 +218,11 @@ void TheMainMenu::DrawUI()
 	Rectangle buttonNextModel = { checkCollision.x, checkCollision.y + 50, 110, 30 };
 	Rectangle buttonPreviousModel = { buttonNextModel.x, buttonNextModel.y + 40, buttonNextModel.width, buttonNextModel.height };
 
-	
+	std::string modelName = "Model: ";
+	modelName.append(ModelFileNameInput);
+
+	if (ModelFileNameInput[0]) GuiLabel({ buttonPreviousModel.x - 50, buttonPreviousModel.y + 40, 200, 30 }, modelName.c_str());
+
 	if (LoadedModels.size() > 0)
 	{
 		if (GuiButton(buttonNextModel, GuiIconText(ICON_ARROW_RIGHT, "  Next"))) NextModel();
@@ -267,11 +277,12 @@ void TheMainMenu::NewScene()
 	ResetViewport();
 	ResetModels();
 	TextCopy(SceneFileNameInput, "\0");
+	SceneSize = 0;
 }
 
 void TheMainMenu::MakeNewModel()
 {
-	if (ModelFileNameInput[0] == '\0') return;
+	if (!ModelFileNameInput[0]) return;
 
 	LoadedModels.push_back(LoadedLineModels());
 	LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
@@ -279,6 +290,7 @@ void TheMainMenu::MakeNewModel()
 	LoadedModels.back().Model->HideCollision = true;
 	LoadedModels.back().Model->ModelColor = BLUE;
 	LoadedModels.back().Name = ModelFileNameInput;
+	SceneSize++;
 	ResetViewport();
 }
 
@@ -344,18 +356,7 @@ void TheMainMenu::LoadScene()
 			return;
 		}
 
-		Player->SetModel(CM.LoadAndGetLineModel(names[0]));
-		Player->Position = positions[0];
-		TextCopy(ModelFileNameInput, names[0].c_str());
-
-		CursurIndex = Player->GetLineModel().size() - 1;
-		Cursor->Position = Player->GetLineModel()[CursurIndex] + Player->Position;
-		Crosshair->Position = Player->Position;
-		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
-		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
-		TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
-
-		for (size_t i = 1; i < positions.size(); i++)  
+		for (size_t i = 0; i < positions.size(); i++)  
 		{
 			LoadedModels.push_back(LoadedLineModels());
 			LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), CM.LoadAndGetLineModel(names[i]));
@@ -364,6 +365,22 @@ void TheMainMenu::LoadScene()
 			LoadedModels.back().Model->ModelColor = BLUE;
 			LoadedModels.back().Name = names[i];
 		}
+
+		SceneSize = LoadedModels.size();
+
+		Player->ModelIndex = 0;
+		Player->Enabled = true;
+		Player->SetModel((LoadedModels[0].Model->GetLineModel()));
+		Player->Position = LoadedModels[0].Model->Position;
+		LoadedModels[0].Model->Enabled = false;
+		TextCopy(ModelFileNameInput, LoadedModels[0].Name.c_str());
+		CursurIndex = Player->GetLineModel().size() - 1;
+		Cursor->Position = Player->GetLineModel()[CursurIndex] + Player->Position;
+		Crosshair->Position = Player->Position;
+		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
+		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
+		TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
+		UpdateTextBoxesAndCursor();
 	}
 	else
 	{
@@ -470,13 +487,16 @@ void TheMainMenu::SaveScene()
 
 	std::string sceneDataSTR;
 
-	sceneDataSTR.append("(");
-	sceneDataSTR.append(std::to_string(Player->Position.x));
-	sceneDataSTR.append(", ");
-	sceneDataSTR.append(std::to_string(Player->Position.y));
-	sceneDataSTR.append(", ");
-	sceneDataSTR.append(std::to_string(Player->Position.z));
-	sceneDataSTR.append(")");
+	if (SceneSize > LoadedModels.size())
+	{
+		sceneDataSTR.append("(");
+		sceneDataSTR.append(std::to_string(Player->Position.x));
+		sceneDataSTR.append(", ");
+		sceneDataSTR.append(std::to_string(Player->Position.y));
+		sceneDataSTR.append(", ");
+		sceneDataSTR.append(std::to_string(Player->Position.z));
+		sceneDataSTR.append(")");
+	}
 	
 	for (int i = 0; i < LoadedModels.size(); i++)
 	{
@@ -489,9 +509,13 @@ void TheMainMenu::SaveScene()
 		sceneDataSTR.append(")");
 	}
 
-	sceneDataSTR.append("Name;");
-	sceneDataSTR.append(ModelFileNameInput);
-	sceneDataSTR.append(":");
+	if (SceneSize > LoadedModels.size())
+	{
+		sceneDataSTR.append("Name;");
+		sceneDataSTR.append(ModelFileNameInput);
+		sceneDataSTR.append(":");
+	}
+
 
 	for (int i = 0; i < LoadedModels.size(); i++)
 	{
@@ -551,7 +575,7 @@ void TheMainMenu::LoadModelInputBox()
 
 		for (auto model : LoadedModels)
 		{
-			model.Model->Enabled = true;
+			//model.Model->Enabled = true;
 		}
 	}
 }
@@ -601,7 +625,7 @@ void TheMainMenu::LoadSceneInputBox()
 
 		for (auto model : LoadedModels)
 		{
-			model.Model->Enabled = true;
+			//model.Model->Enabled = true;
 		}
 	}
 }
@@ -616,7 +640,7 @@ void TheMainMenu::MakeNewPoint()
 
 void TheMainMenu::MovePoint()
 {
-	Player->MovePoint({ Cursor->Position.x, Cursor->Position.y, 0 }, CursurIndex);
+	Player->MovePoint({ Cursor->Position.x - Player->Position.x, Cursor->Position.y - Player->Position.y, 0 }, CursurIndex);
 }
 
 void TheMainMenu::DeletePoint()
@@ -694,17 +718,63 @@ void TheMainMenu::CursorDown()
 
 void TheMainMenu::NextModel()
 {
+	if (LoadedModels.size() < 2) return;
+
+	LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
+	LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+
+	if (Player->ModelIndex > LoadedModels.size() - 2)
+	{
+		Player->ModelIndex = 0;
+		LoadedModels.back().Model->Enabled = true;
+	}
+	else
+	{
+		Player->ModelIndex++;
+		LoadedModels[Player->ModelIndex - 1].Model->Enabled = true;
+	}
+
+	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
+	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
+	CursurIndex = Player->GetLineModel().size() - 1;
+	LoadedModels[Player->ModelIndex].Model->Enabled = false;
+	TextCopy(ModelFileNameInput, LoadedModels[Player->ModelIndex].Name.c_str());
+
+	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::PreviousModel()
 {
+	if (LoadedModels.size() < 2) return;
+
+	LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
+	LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+
+	if (Player->ModelIndex < 1)
+	{
+		Player->ModelIndex = LoadedModels.size() - 1;
+		LoadedModels[0].Model->Enabled = true;
+	}
+	else
+	{
+		Player->ModelIndex--;
+		LoadedModels[Player->ModelIndex + 1].Model->Enabled = true;
+	}
+
+	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
+	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
+	CursurIndex = Player->GetLineModel().size() - 1;
+	LoadedModels[Player->ModelIndex].Model->Enabled = false;
+	TextCopy(ModelFileNameInput, LoadedModels[Player->ModelIndex].Name.c_str());
+
+	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::UpdateTextBoxesAndCursor()
 {
-	if (Player->GetLineModel().size() > 0) Cursor->Position = Player->Position + Player->GetLineModel()[CursurIndex] * Player->Scale;
-	TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
-	TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());	
+	if (Player->GetLineModel().size() > 0) Cursor->Position = (Player->Position + Player->GetLineModel()[CursurIndex]) * Player->Scale;
+	TextCopy(TextBoxXInput, std::to_string(Player->GetLineModel()[CursurIndex].x).c_str());
+	TextCopy(TextBoxYInput, std::to_string(Player->GetLineModel()[CursurIndex].y).c_str());
 	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
 	Crosshair->Position = Player->Position;
 }
@@ -730,6 +800,55 @@ void TheMainMenu::DrawLoadErrorMessage()
 		Player->Enabled = true;
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
+	}
+}
+
+void TheMainMenu::KeybaordInput()
+{
+	if (IsKeyPressed(KEY_D))
+	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Player->Position.x += 9.0f;
+		}
+
+		Player->Position.x += 1.0f;
+		UpdateTextBoxesAndCursor();
+	}
+	else if (IsKeyPressed(KEY_A))
+	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Player->Position.x -= 9.0f;
+
+		}
+
+		Player->Position.x -= 1.0f;
+		UpdateTextBoxesAndCursor();
+	}
+	else
+	{
+	}
+
+	if (IsKeyPressed(KEY_W))
+	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Player->Position.y -= 9.0f;
+		}
+
+		Player->Position.y -= 1.0f;
+		UpdateTextBoxesAndCursor();
+	}
+	else if (IsKeyPressed(KEY_S))
+	{
+		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+		{
+			Player->Position.y += 9.0f;
+		}
+
+		Player->Position.y += 1.0f;
+		UpdateTextBoxesAndCursor();
 	}
 }
 

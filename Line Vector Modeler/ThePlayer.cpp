@@ -63,6 +63,7 @@ void ThePlayer::Reset()
 	Position = { 0, 0, 0 };
 	Velocity = { 0, 0, 0 };
 	Scale = 1.0f;
+	ModelIndex = -1;
 	LinePoints.clear();
 	Enabled = false;
 	MirrorModel->Enabled = false;
@@ -247,52 +248,4 @@ void ThePlayer::Gamepad()
 
 void ThePlayer::Keyboard()
 {
-	if (IsKeyPressed(KEY_D))
-	{
-		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
-		{
-			Position.x += 9.0f;
-			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.x += 10.0f;
-		}
-
-		Position.x += 1.0f;
-	}
-	else if (IsKeyPressed(KEY_A))
-	{
-		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
-		{
-			Position.x -= 9.0f;
-			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.x -= 10.0f;
-
-		}
-
-		Position.x -= 1.0f;
-	}
-	else
-	{
-	}
-
-	if (IsKeyPressed(KEY_W))
-	{
-		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
-		{
-			Position.y -= 9.0f;
-			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.y -= 10.0f;
-		}
-
-		Position.y -= 1.0f;
-	}
-	else if (IsKeyPressed(KEY_S))
-	{
-		if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
-		{
-			Position.y += 9.0f;
-			if (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) Position.y += 10.0f;
-		}
-
-		Position.y += 1.0f;
-	}
-	else
-	{
-	}
 }

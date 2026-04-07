@@ -8,6 +8,8 @@ public:
 	ThePlayer();
 	virtual ~ThePlayer();
 
+	size_t ModelIndex = 0;
+
 	bool Initialize();
 	bool BeginRun();
 
