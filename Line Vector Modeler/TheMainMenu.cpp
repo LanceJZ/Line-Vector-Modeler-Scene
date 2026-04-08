@@ -75,7 +75,7 @@ void TheMainMenu::Update()
 
 		float x = std::stof(TextBoxXInput);
 
-		if (x > -1000.0f && x < 1000.0f) Cursor->Position.x = x + Player->Position.x;
+		UpdateTextBoxesAndCursor();
 
 	}
 
@@ -85,7 +85,7 @@ void TheMainMenu::Update()
 
 		float y = std::stof(TextBoxYInput);
 
-		if (y > -1000.0f && y < 1000.0f) Cursor->Position.y = y + Player->Position.y;
+		UpdateTextBoxesAndCursor();
 
 	}
 
@@ -290,8 +290,13 @@ void TheMainMenu::MakeNewModel()
 	LoadedModels.back().Model->HideCollision = true;
 	LoadedModels.back().Model->ModelColor = BLUE;
 	LoadedModels.back().Name = ModelFileNameInput;
+	Player->ModelIndex = LoadedModels.size() - 1;
+	Player->ClearModel();
 	SceneSize++;
-	ResetViewport();
+	TextCopy(TextBoxScale, "1.0");
+	TextCopy(TextBoxPointIntput, "1.0");
+	TextCopy(ModelFileNameInput, "\0");
+	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::LoadModel(std::string fileName)
@@ -302,25 +307,29 @@ void TheMainMenu::LoadModel(std::string fileName)
 	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
 	TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 	TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
+
+	if (LoadedModels.size() > 0)
+	{
+		LoadedModels.push_back(LoadedLineModels());
+		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
+		LoadedModels.back().Model->Position = Player->Position;
+		LoadedModels.back().Model->HideCollision = true;
+		LoadedModels.back().Model->ModelColor = BLUE;
+		LoadedModels.back().Name = fileName;
+		LoadedModels.back().Model->Enabled = false;
+		Player->ModelIndex = LoadedModels.size() - 1;
+	}
 }
 
 void TheMainMenu::LoadScene()
 {
-	std::string path = "Scenes/";
-	std::string fileNameSTR = path;
-	fileNameSTR.append(SceneFileNameInput);
-	fileNameSTR.append(".scn");
-
-	if (FileExists(fileNameSTR.c_str()))
+	if (FileExists(CM.GetSceneFileNameWithPath(SceneFileNameInput).c_str()))
 	{
-		std::string sceneSTR = LoadFileText(fileNameSTR.c_str());
+		std::string sceneSTR = LoadFileText(CM.GetSceneFileNameWithPath(SceneFileNameInput).c_str());
 		ResetModels();
 		ResetViewport();
 
-		std::vector<Vector3> positions;
-
-		positions = CM.ConvertStringToPointsNew(sceneSTR);
-
+		std::vector<Vector3> positions = CM.ConvertStringToPointsNew(sceneSTR);
 		std::vector<std::string> names;
 		std::string name;
 		bool foundName = false;
@@ -367,7 +376,6 @@ void TheMainMenu::LoadScene()
 		}
 
 		SceneSize = LoadedModels.size();
-
 		Player->ModelIndex = 0;
 		Player->Enabled = true;
 		Player->SetModel((LoadedModels[0].Model->GetLineModel()));
@@ -375,7 +383,6 @@ void TheMainMenu::LoadScene()
 		LoadedModels[0].Model->Enabled = false;
 		TextCopy(ModelFileNameInput, LoadedModels[0].Name.c_str());
 		CursurIndex = Player->GetLineModel().size() - 1;
-		Cursor->Position = Player->GetLineModel()[CursurIndex] + Player->Position;
 		Crosshair->Position = Player->Position;
 		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
 		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
@@ -395,22 +402,46 @@ void TheMainMenu::SaveAsInputBox()
 	Crosshair->Enabled = false;
 	Cursor->Enabled = false;
 
+	for (auto model : LoadedModels)
+	{
+		model.Model->Enabled = false;
+	}
+
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
 	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_SAVE, "Save file"), "File name:", TextOkCancel, TextInput, 255, NULL);
 
 	if (result == 1)
 	{
-		if (SaveModelFile)
+		bool fileError = true;
+
+		if (SaveModelFile) fileError = FileExists(CM.GetLineModelFileNameWithPath(TextInput).c_str());
+		if (SaveSceneFile) fileError = FileExists(CM.GetSceneFileNameWithPath(TextInput).c_str());
+
+		if (fileError)
 		{
-			TextCopy(ModelFileNameInput, TextInput);
-			SaveModel();
-			SaveModelFile = false;
+			ShowLoadErrorMessage = true;
+			ShowSaveTextInput = false;
+
+			std::string msg = TextInput;
+			msg.append(" already exists.");
+
+			TextCopy(MessageBoxText, msg.c_str());
 		}
-		else if (SaveSceneFile)
+		else
 		{
-			TextCopy(SceneFileNameInput, TextInput);
-			SaveScene();
-			SaveSceneFile = false;
+			if (SaveModelFile)
+			{
+				TextCopy(ModelFileNameInput, TextInput);
+				SaveModel();
+				bool SaveModelFile = false;
+			}
+
+			if (SaveSceneFile)
+			{
+				TextCopy(SceneFileNameInput, TextInput);
+				SaveScene();
+				bool SaveSceneFile = false;
+			}
 		}
 	}
 
@@ -421,6 +452,13 @@ void TheMainMenu::SaveAsInputBox()
 		Player->Enabled = true;
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
+
+		for (auto model : LoadedModels)
+		{
+			model.Model->Enabled = true;
+		}
+
+		if (LoadedModels.size() > 1) LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	}
 }
 
@@ -432,37 +470,10 @@ void TheMainMenu::SaveModel()
 	if (!ModelFileNameInput[0])
 	{
 		ShowSaveTextInput = true;
-		SaveModelFile = true;
-		SaveSceneFile = false;
 		return;
 	}
 
-	std::string path = "Models/";
-	std::string nameVEC = path;
-	nameVEC.append(ModelFileNameInput);
-	nameVEC.append(".vec");
-
-	char * fileName = new char[nameVEC.length() + 1]; 
-	strcpy(fileName, nameVEC.c_str());
-
-	std::string modelPointsSTR;
-
-	for (int i = 0; i < Player->GetLineModel().size(); i++)
-	{
-		modelPointsSTR.append("(");
-		modelPointsSTR.append(std::to_string(Player->GetLineModel()[i].x));
-		modelPointsSTR.append(", ");
-		modelPointsSTR.append(std::to_string(Player->GetLineModel()[i].y));
-		modelPointsSTR.append(", ");
-		modelPointsSTR.append(std::to_string(Player->GetLineModel()[i].z));
-		modelPointsSTR.append(")");
-	}
-
-	char * linePoints = new char[modelPointsSTR.length() + 1];
-	strcpy(linePoints, modelPointsSTR.c_str());
-
-	SaveFileText(fileName, linePoints);
-	SaveModelFile = false;
+	CM.SaveLineModel(ModelFileNameInput, Player->GetLineModel());
 }
 
 void TheMainMenu::SaveScene()
@@ -473,62 +484,22 @@ void TheMainMenu::SaveScene()
 	{
 		ShowSaveTextInput = true;
 		SaveSceneFile = true;
-		SaveModelFile = false;
 		return;
 	}
 
-	std::string path = "Scenes/";
-	std::string nameVEC = path;
-	nameVEC.append(SceneFileNameInput);
-	nameVEC.append(".scn");
+	LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
 
-	char * fileName = new char[nameVEC.length() + 1]; 
-	strcpy(fileName, nameVEC.c_str());
-
+	std::vector<Scene> sceneModels;
 	std::string sceneDataSTR;
 
-	if (SceneSize > LoadedModels.size())
+	for (auto model : LoadedModels)
 	{
-		sceneDataSTR.append("(");
-		sceneDataSTR.append(std::to_string(Player->Position.x));
-		sceneDataSTR.append(", ");
-		sceneDataSTR.append(std::to_string(Player->Position.y));
-		sceneDataSTR.append(", ");
-		sceneDataSTR.append(std::to_string(Player->Position.z));
-		sceneDataSTR.append(")");
-	}
-	
-	for (int i = 0; i < LoadedModels.size(); i++)
-	{
-		sceneDataSTR.append("(");
-		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.x));
-		sceneDataSTR.append(", ");
-		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.y));
-		sceneDataSTR.append(", ");
-		sceneDataSTR.append(std::to_string(LoadedModels[i].Model->Position.z));
-		sceneDataSTR.append(")");
+		sceneModels.push_back(Scene());
+		sceneModels.back().Position = model.Model->Position;
+		sceneModels.back().Name = model.Name;
 	}
 
-	if (SceneSize > LoadedModels.size())
-	{
-		sceneDataSTR.append("Name;");
-		sceneDataSTR.append(ModelFileNameInput);
-		sceneDataSTR.append(":");
-	}
-
-
-	for (int i = 0; i < LoadedModels.size(); i++)
-	{
-		sceneDataSTR.append("Name;");
-		sceneDataSTR.append(LoadedModels[i].Name);
-		sceneDataSTR.append(":");
-	}
-
-	char * sceneData = new char[sceneDataSTR.length() + 1];
-	strcpy(sceneData, sceneDataSTR.c_str());
-
-	SaveFileText(fileName, sceneData);
-	SaveSceneFile = false;
+	CM.SaveScene(SceneFileNameInput, sceneModels);
 }
 
 void TheMainMenu::LoadModelInputBox()
@@ -547,36 +518,35 @@ void TheMainMenu::LoadModelInputBox()
 
 	if (result == 1)
 	{
-		std::string nameVEC = "Models/";
-		nameVEC.append(TextInput);
-		nameVEC.append(".vec");
-
-		if (!FileExists(nameVEC.c_str()))
+		if (!FileExists(CM.GetLineModelFileNameWithPath(TextInput).c_str()))
 		{
 			ShowLoadErrorMessage = true;
 			ShowLoadTextInput = false;
 			TextCopy(MessageBoxText, TextInput);
-			TextCopy(TextInput, "\0");
-			return;
+		}
+		else
+		{
+			TextCopy(ModelFileNameInput, TextInput);
+			LoadModel(ModelFileNameInput);
 		}
 
-		TextCopy(ModelFileNameInput, TextInput);
-		LoadModel(ModelFileNameInput);
 	}
 
 	if ((result == 0) || (result == 1) || (result == 2))
 	{
 		ShowLoadTextInput = false;
-		TextCopy(TextInput, "\0");
 		Player->Enabled = true;
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
 		CollisionCheckBox = false;
+		TextCopy(TextInput, "\0");
 
 		for (auto model : LoadedModels)
 		{
-			//model.Model->Enabled = true;
+			model.Model->Enabled = true;
 		}
+
+		if (LoadedModels.size() > 1) LoadedModels.back().Model->Enabled = false;
 	}
 }
 
@@ -772,7 +742,19 @@ void TheMainMenu::PreviousModel()
 
 void TheMainMenu::UpdateTextBoxesAndCursor()
 {
-	if (Player->GetLineModel().size() > 0) Cursor->Position = (Player->Position + Player->GetLineModel()[CursurIndex]) * Player->Scale;
+	Crosshair->Position = Player->Position;
+
+	if (Player->GetLineModel().size() < 1)
+	{
+		Cursor->Position = Crosshair->Position;
+		TextCopy(TextBoxXInput, "0");
+		TextCopy(TextBoxYInput, "0");
+		TextCopy(TextBoxPointIntput, "0");
+
+		return;
+	}
+
+	Cursor->Position = (Player->Position + Player->GetLineModel()[CursurIndex]) * Player->Scale;
 	TextCopy(TextBoxXInput, std::to_string(Player->GetLineModel()[CursurIndex].x).c_str());
 	TextCopy(TextBoxYInput, std::to_string(Player->GetLineModel()[CursurIndex].y).c_str());
 	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());

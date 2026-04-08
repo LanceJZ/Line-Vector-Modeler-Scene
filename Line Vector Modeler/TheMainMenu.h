@@ -37,10 +37,10 @@ private:
 	bool ShowLoadSceneTextInput = false;
 	bool CollisionCheckBox = false;
 	bool MirrorCheckBox = false;
-	bool SaveModelFile = false;
-	bool SaveSceneFile = false;
 	bool LoadModelFile = false;
 	bool LoadSceneFile = false;
+	bool SaveModelFile = false;
+	bool SaveSceneFile = false;
 
 	size_t CursurIndex = 0;
 	size_t SceneSize = 0;

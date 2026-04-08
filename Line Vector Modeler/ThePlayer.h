@@ -21,6 +21,8 @@ public:
 	void Spawn();
 	void NewGame();
 
+	void ClearModel();
+
 	void AddPoint(Vector3 point);
 	void AddPointAt(Vector3 point, size_t index);
 	void MovePoint(Vector3 point, size_t index);

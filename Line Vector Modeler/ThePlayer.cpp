@@ -80,6 +80,11 @@ void ThePlayer::NewGame()
 	
 }
 
+void ThePlayer::ClearModel()
+{
+	LinePoints.clear();
+}
+
 void ThePlayer::AddPoint(Vector3 point)
 {
 	LinePoints.push_back(point);
