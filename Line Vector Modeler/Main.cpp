@@ -41,7 +41,7 @@ int WinMain()
 	int windowHeight = 960; //height
 	int windowWidth = 1280; //width
 
-	InitWindow(windowWidth, windowHeight, "Line Vector Scene Modeler - 02.01.0001");
+	InitWindow(windowWidth, windowHeight, "Line Vector Scene Modeler - 02.01.1002");
 	InitAudioDevice();
 
 	Image icon = LoadImage("icon.png");

@@ -52,7 +52,7 @@ private:
 
 	char TextInput[256] = { 0 };
 
-	char ModelFileNameInput[256] = { 0 };
+	char ModelFileName[256] = { 0 };
 	char SceneFileNameInput[256] = { 0 };
 	char MessageBoxText[256] = { 0 };
 
@@ -89,12 +89,15 @@ private:
 	void ApplyMirror();
 	void Flip();
 	void Center();
+	void SetOrigin();
 	void SetScale();
 	void CursorUp();
 	void CursorDown();
 	void NextModel();
 	void PreviousModel();
+	void AddPlayerToScene();
 	void UpdateTextBoxesAndCursor();
+	void UpdateCursor();
 
 	void DrawMirrorUI();
 	void DrawLoadErrorMessage();

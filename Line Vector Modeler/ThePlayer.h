@@ -31,6 +31,7 @@ public:
 	void ApplyMirror();
 	void Flip();
 	void Center();
+	void SetOrigin();
 	void SetScale(float scale);
 
 private:

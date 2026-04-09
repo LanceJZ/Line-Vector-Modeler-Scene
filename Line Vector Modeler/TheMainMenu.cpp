@@ -76,9 +76,8 @@ void TheMainMenu::Update()
 		if (!TextBoxXInput[0]) return;
 
 		float x = std::stof(TextBoxXInput);
-
-		UpdateTextBoxesAndCursor();
-
+		x += Player->Position.x;
+		Cursor->X(x);
 	}
 
 	if (!TextBoxYEditMode)
@@ -86,9 +85,8 @@ void TheMainMenu::Update()
 		if (!TextBoxYInput[0]) return;
 
 		float y = std::stof(TextBoxYInput);
-
-		UpdateTextBoxesAndCursor();
-
+		y += Player->Position.y;
+		Cursor->Y(y);
 	}
 
 	if (!TextBoxScaleEditMode)
@@ -121,8 +119,8 @@ void TheMainMenu::DrawUI()
 
 	if (SceneFileNameInput[0]) GuiLabel({ 1050, 10, 200, 30 }, sceneName.c_str());
 
-	std::string x = "X: " + std::to_string(Crosshair->Position.x);
-	std::string y = "Y: " + std::to_string(Crosshair->Position.y);
+	std::string x = "X: " + std::to_string(Player->Position.x);
+	std::string y = "Y: " + std::to_string(Player->Position.y);
 	
 	GuiLabel({ 500, 900, 200, 40 }, x.c_str());
 	GuiLabel({ 500 + 200, 900, 200, 40 }, y.c_str());
@@ -153,7 +151,7 @@ void TheMainMenu::DrawUI()
 	{
 		if (GuiButton(buttonNewScene, GuiIconText(ICON_FILE_NEW, "New scene"))) NewScene();
 
-		if (!ModelFileNameInput[0] == '\0')	if (GuiButton(buttonSaveScene, GuiIconText(ICON_FILE_SAVE, "Save scene"))) SaveScene();
+		if (!ModelFileName[0] == '\0')	if (GuiButton(buttonSaveScene, GuiIconText(ICON_FILE_SAVE, "Save scene"))) SaveScene();
 	}
 
 	Rectangle buttonNewPoint = { 1120, 200, 140, 30 };
@@ -165,8 +163,6 @@ void TheMainMenu::DrawUI()
 	Rectangle buttonDown = { buttonUp.x, buttonUp.y + 40, buttonUp.width, buttonUp.height };
 	Rectangle buttonMirror = { buttonUp.x, buttonUp.y + 190, buttonUp.width + 30, buttonUp.height };
 	Rectangle checkMirror = { buttonUp.x, buttonMirror.y - 40, 20, 20 };
-	Rectangle buttonFlip = { buttonUp.x, buttonUp.y + 240, buttonUp.width, buttonUp.height };
-	Rectangle buttonCenter = { buttonUp.x, buttonUp.y + 290, buttonUp.width, buttonUp.height };
 
 	if (GuiButton(buttonNewPoint, GuiIconText(ICON_FILE_ADD, "  New point"))) MakeNewPoint();
 	if (GuiButton(buttonMovePoint, GuiIconText(ICON_CURSOR_MOVE, "  Move point"))) MovePoint();
@@ -178,10 +174,16 @@ void TheMainMenu::DrawUI()
 		GuiCheckBox(checkMirror, "Mirror", &MirrorCheckBox);
 	}
 
-	if (GuiButton(buttonFlip, GuiIconText(ICON_REDO_FILL, "   Flip"))) Flip();
-	if (GuiButton(buttonCenter, GuiIconText(ICON_ZOOM_CENTER, "  Center"))) Center();
-	//if (GuiButton(buttonNewLine, GuiIconText(ICON_CURSOR_SCALE_FILL, "  New line"))) {}
+	Rectangle buttonFlip = { buttonUp.x, buttonUp.y + 250, buttonUp.width, buttonUp.height };
+	Rectangle buttonCenter = { buttonUp.x, buttonFlip.y + 40, buttonUp.width, buttonUp.height };
+	Rectangle buttonSetOrigin = { buttonCenter.x, buttonCenter.y + 40, buttonCenter.width, buttonCenter.height };
 
+	if (Player->GetLineModel().size() > 1)
+	{
+		if (GuiButton(buttonFlip, GuiIconText(ICON_REDO_FILL, "   Flip"))) Flip();
+		if (GuiButton(buttonCenter, GuiIconText(ICON_ZOOM_CENTER, "  Center"))) Center();
+		if (GuiButton(buttonSetOrigin, GuiIconText(ICON_TARGET_SMALL_FILL, "Set Origin"))) SetOrigin();
+	}
 
 	if (GuiButton(buttonUp, GuiIconText(ICON_ARROW_UP, "   Back"))) CursorUp();;
 	if (GuiButton(buttonDown, GuiIconText(ICON_ARROW_DOWN, " Forward"))) CursorDown();
@@ -213,7 +215,7 @@ void TheMainMenu::DrawUI()
 	GuiLabel(labelPoint, "Point:");
 	if (GuiTextBox(valueBoxPoint, TextBoxPointIntput, 16, TextBoxPointEditMode)) TextBoxPointEditMode = !TextBoxPointEditMode;
 
-	Rectangle checkCollision = { 1130, buttonCenter.y + 50, 20, 20 };
+	Rectangle checkCollision = { 1130, buttonSetOrigin.y + 50, 20, 20 };
 
 	GuiCheckBox(checkCollision, " Collision", &CollisionCheckBox);
 
@@ -221,9 +223,9 @@ void TheMainMenu::DrawUI()
 	Rectangle buttonPreviousModel = { buttonNextModel.x, buttonNextModel.y + 40, buttonNextModel.width, buttonNextModel.height };
 
 	std::string modelName = "Model: ";
-	modelName.append(ModelFileNameInput);
+	modelName.append(ModelFileName);
 
-	if (ModelFileNameInput[0]) GuiLabel({ buttonPreviousModel.x - 150, buttonPreviousModel.y + 50, 200, 30 }, modelName.c_str());
+	if (ModelFileName[0]) GuiLabel({ buttonPreviousModel.x - 150, buttonPreviousModel.y + 50, 200, 30 }, modelName.c_str());
 
 	if (LoadedModels.size() > 0)
 	{
@@ -255,6 +257,8 @@ void TheMainMenu::ResetModels()
 	Cursor->HideCollision = true;
 	Cursor->Alpha = 200;
 	Cursor->ModelColor = LIGHTGRAY;
+
+	Crosshair->SetParent(*Player);
 }
 
 void TheMainMenu::ResetViewport()
@@ -263,7 +267,7 @@ void TheMainMenu::ResetViewport()
 	Cursor->X(0.0f);
 	Cursor->X(0.0f);
 
-	TextCopy(ModelFileNameInput, "\0");
+	TextCopy(ModelFileName, "\0");
 	TextCopy(TextBoxScale, "1.0");
 	TextCopy(TextBoxXInput, "0.0");
 	TextCopy(TextBoxYInput, "0.0");
@@ -279,27 +283,21 @@ void TheMainMenu::NewScene()
 	ResetViewport();
 	ResetModels();
 	TextCopy(SceneFileNameInput, "\0");
+	TextCopy(ModelFileName, "\0");
 	SceneSize = 1;
 }
 
 void TheMainMenu::MakeNewModel()
 {
-	if (!ModelFileNameInput[0]) return;
+	if (!ModelFileName[0]) return;
 
-	LoadedModels.push_back(LoadedLineModels());
-	LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
-	LoadedModels.back().Model->HideCollision = true;
-	LoadedModels.back().Model->ModelColor = BLUE;
-	LoadedModels.back().Model->SetModel(Player->GetLineModel());
-	LoadedModels.back().Model->Position = Player->Position;
-	LoadedModels.back().Model->Position.z = 0.0f;
-	LoadedModels.back().Name = ModelFileNameInput;
-	Player->ModelIndex = LoadedModels.size() - 1;
+	AddPlayerToScene();
 	Player->ClearModel();
 	SceneSize++;
+	CursurIndex = 0;
 	TextCopy(TextBoxScale, "1.0");
 	TextCopy(TextBoxPointIntput, "1.0");
-	TextCopy(ModelFileNameInput, "\0");
+	TextCopy(ModelFileName, "\0");
 	UpdateTextBoxesAndCursor();
 }
 
@@ -373,9 +371,8 @@ void TheMainMenu::LoadScene()
 		Player->SetModel((LoadedModels[0].Model->GetLineModel()));
 		Player->Position = LoadedModels[0].Model->Position;
 		LoadedModels[0].Model->Enabled = false;
-		TextCopy(ModelFileNameInput, LoadedModels[0].Name.c_str());
+		TextCopy(ModelFileName, LoadedModels[0].Name.c_str());
 		CursurIndex = Player->GetLineModel().size() - 1;
-		Crosshair->Position = Player->Position;
 		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
 		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 		TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
@@ -407,7 +404,7 @@ void TheMainMenu::SaveAsInputBox()
 		bool fileError = true;
 
 		if (SaveModelFile) fileError = FileExists(CM.GetLineModelFileNameWithPath(TextInput).c_str());
-		if (SaveSceneFile) fileError = FileExists(CM.GetSceneFileNameWithPath(TextInput).c_str());
+		else if (SaveSceneFile) fileError = FileExists(CM.GetSceneFileNameWithPath(TextInput).c_str());
 
 		if (fileError)
 		{
@@ -423,12 +420,11 @@ void TheMainMenu::SaveAsInputBox()
 		{
 			if (SaveModelFile)
 			{
-				TextCopy(ModelFileNameInput, TextInput);
+				TextCopy(ModelFileName, TextInput);
 				SaveModel();
 				bool SaveModelFile = false;
 			}
-
-			if (SaveSceneFile)
+			else if (SaveSceneFile)
 			{
 				TextCopy(SceneFileNameInput, TextInput);
 				SaveScene();
@@ -459,45 +455,29 @@ void TheMainMenu::SaveModel()
 	if (Player->GetLineModel().size() < 1) return;
 
 	// If there is no file name, open the input box to get file name, return.
-	if (!ModelFileNameInput[0])
+	if (!ModelFileName[0])
 	{
+		SaveModelFile = true;
 		ShowSaveTextInput = true;
 		return;
 	}
 
-	if (LoadedModels.size() > 0)
-	{
-		CM.SaveLineModel(ModelFileNameInput, Player->GetLineModel());
-		LoadedModels.back().Model->SetModel(Player->GetLineModel());
-		LoadedModels.back().Model->Position = Player->Position;
-		LoadedModels.back().Model->Position.z = 0.0f;
-		LoadedModels.back().Name = ModelFileNameInput;
-		Player->ModelIndex = LoadedModels.size() - 1;
-	}
+	CM.SaveLineModel(ModelFileName, Player->GetLineModel());
+
+	if (LoadedModels.size() < SceneSize) AddPlayerToScene();
+
+	SaveModelFile = false;
 }
 
 void TheMainMenu::SaveScene()
 {
-	if (!ModelFileNameInput[0] || Player->GetLineModel().size() < 1) return;
+	if (!ModelFileName[0] || Player->GetLineModel().size() < 1 || SceneSize != LoadedModels.size()) return;
 
 	if (!SceneFileNameInput[0])
 	{
 		ShowSaveTextInput = true;
 		SaveSceneFile = true;
 		return;
-	}
-
-	if (LoadedModels.size() < SceneSize)
-	{
-		LoadedModels.push_back(LoadedLineModels());
-		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
-		LoadedModels.back().Model->HideCollision = true;
-		LoadedModels.back().Model->ModelColor = BLUE;
-		LoadedModels.back().Model->SetModel(Player->GetLineModel());
-		LoadedModels.back().Model->Position = Player->Position;
-		LoadedModels.back().Model->Position.z = 0.0f;
-		LoadedModels.back().Name = ModelFileNameInput;
-		Player->ModelIndex = LoadedModels.size() - 1;
 	}
 
 	std::vector<Scene> sceneModels;
@@ -511,6 +491,8 @@ void TheMainMenu::SaveScene()
 	}
 
 	CM.SaveScene(SceneFileNameInput, sceneModels);
+
+	SaveSceneFile = false;
 }
 
 void TheMainMenu::LoadModelInputBox()
@@ -537,8 +519,8 @@ void TheMainMenu::LoadModelInputBox()
 		}
 		else
 		{
-			TextCopy(ModelFileNameInput, TextInput);
-			LoadModel(ModelFileNameInput);
+			TextCopy(ModelFileName, TextInput);
+			LoadModel(ModelFileName);
 		}
 
 	}
@@ -615,7 +597,10 @@ void TheMainMenu::LoadSceneInputBox()
 
 void TheMainMenu::MakeNewPoint()
 {
-	Player->AddPointAt({ Cursor->Position.x, Cursor->Position.y, 0 }, CursurIndex);
+	float x = std::stof(TextBoxXInput);
+	float y = std::stof(TextBoxYInput);
+
+	Player->AddPointAt({ x, y, 0 }, CursurIndex);
 	if (CursurIndex < Player->GetLineModel().size() - 1) CursurIndex++;
 	else CursurIndex = Player->GetLineModel().size() - 1;
 	UpdateTextBoxesAndCursor();
@@ -631,7 +616,6 @@ void TheMainMenu::DeletePoint()
 	if (Player->GetLineModel().size() < 1)
 	{
 		CursurIndex = 0;
-		Cursor->Position = { 0, 0, 0 };
 		UpdateTextBoxesAndCursor();
 		return;
 	}
@@ -654,7 +638,6 @@ void TheMainMenu::ApplyMirror()
 	MirrorCheckBox = false;
 	Player->ApplyMirror();
 	CursurIndex = Player->GetLineModel().size() - 1;
-	Cursor->Position = Player->GetLineModel()[CursurIndex];
 	UpdateTextBoxesAndCursor();
 }
 
@@ -666,6 +649,12 @@ void TheMainMenu::Flip()
 void TheMainMenu::Center()
 {
 	Player->Center();
+	UpdateTextBoxesAndCursor();
+}
+
+void TheMainMenu::SetOrigin()
+{
+	Player->SetOrigin();
 	UpdateTextBoxesAndCursor();
 }
 
@@ -703,22 +692,14 @@ void TheMainMenu::NextModel()
 {
 	if (LoadedModels.size() < SceneSize)
 	{
-		LoadedModels.push_back(LoadedLineModels());
-		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
-		LoadedModels.back().Model->HideCollision = true;
-		LoadedModels.back().Model->ModelColor = BLUE;
-		LoadedModels.back().Model->SetModel(Player->GetLineModel());
-		LoadedModels.back().Model->Position = Player->Position;
-		LoadedModels.back().Model->Position.z = 0.0f;
-		LoadedModels.back().Name = ModelFileNameInput;
-		Player->ModelIndex = LoadedModels.size() - 1;
+		AddPlayerToScene();
 	}
 	else
 	{
 		LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
 		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
 		LoadedModels[Player->ModelIndex].Model->Position.z = 0.0f;
-		LoadedModels[Player->ModelIndex].Name = ModelFileNameInput;
+		LoadedModels[Player->ModelIndex].Name = ModelFileName;
 	}
 
 	if (LoadedModels.size() < 2) return;
@@ -738,7 +719,7 @@ void TheMainMenu::NextModel()
 	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
 	CursurIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
-	TextCopy(ModelFileNameInput, LoadedModels[Player->ModelIndex].Name.c_str());
+	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
 
 	UpdateTextBoxesAndCursor();
 }
@@ -747,22 +728,14 @@ void TheMainMenu::PreviousModel()
 {
 	if (LoadedModels.size() < SceneSize)
 	{
-		LoadedModels.push_back(LoadedLineModels());
-		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
-		LoadedModels.back().Model->HideCollision = true;
-		LoadedModels.back().Model->ModelColor = BLUE;
-		LoadedModels.back().Model->SetModel(Player->GetLineModel());
-		LoadedModels.back().Model->Position = Player->Position;
-		LoadedModels.back().Model->Position.z = 0.0f;
-		LoadedModels.back().Name = ModelFileNameInput;
-		Player->ModelIndex = LoadedModels.size() - 1;
+		AddPlayerToScene();
 	}
 	else
 	{
 		LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
 		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
 		LoadedModels[Player->ModelIndex].Model->Position.z = 0.0f;
-		LoadedModels[Player->ModelIndex].Name = ModelFileNameInput;
+		LoadedModels[Player->ModelIndex].Name = ModelFileName;
 	}
 
 	if (LoadedModels.size() < 2) return;
@@ -782,18 +755,28 @@ void TheMainMenu::PreviousModel()
 	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
 	CursurIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
-	TextCopy(ModelFileNameInput, LoadedModels[Player->ModelIndex].Name.c_str());
+	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
 
 	UpdateTextBoxesAndCursor();
 }
 
+void TheMainMenu::AddPlayerToScene()
+{
+	LoadedModels.push_back(LoadedLineModels());
+	LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
+	LoadedModels.back().Model->HideCollision = true;
+	LoadedModels.back().Model->ModelColor = BLUE;
+	LoadedModels.back().Model->SetModel(Player->GetLineModel());
+	LoadedModels.back().Model->Position = Player->Position;
+	LoadedModels.back().Model->Position.z = 0.0f;
+	LoadedModels.back().Name = ModelFileName;
+	Player->ModelIndex = LoadedModels.size() - 1;
+}
+
 void TheMainMenu::UpdateTextBoxesAndCursor()
 {
-	Crosshair->Position = Player->Position;
-
 	if (Player->GetLineModel().size() < 1)
 	{
-		Cursor->Position = Crosshair->Position;
 		TextCopy(TextBoxXInput, "0");
 		TextCopy(TextBoxYInput, "0");
 		TextCopy(TextBoxPointIntput, "0");
@@ -801,16 +784,17 @@ void TheMainMenu::UpdateTextBoxesAndCursor()
 		return;
 	}
 
-	Cursor->Position = (Player->Position + Player->GetLineModel()[CursurIndex]) * Player->Scale;
 	TextCopy(TextBoxXInput, std::to_string(Player->GetLineModel()[CursurIndex].x).c_str());
 	TextCopy(TextBoxYInput, std::to_string(Player->GetLineModel()[CursurIndex].y).c_str());
 	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
-	Crosshair->Position = Player->Position;
+}
+
+void TheMainMenu::UpdateCursor()
+{
 }
 
 void TheMainMenu::DrawMirrorUI()
 {
-
 }
 
 void TheMainMenu::DrawLoadErrorMessage()

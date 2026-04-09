@@ -182,29 +182,34 @@ void ThePlayer::Center()
 	float moveX;
 	float moveY;
 
-	if (left > right)
-	{
-		moveX = left - right;
-	}
-	else
-	{
-		moveX = (right - left) * -1.0f;
-	}
+	if (left > right) moveX = left - right;
+	else moveX = (right - left) * -1.0f;
 
-	if (top > bottom)
-	{
-		moveY = top - bottom;
-	}
-	else
-	{
-		moveY = (bottom - top) * -1.0f;
-	}
+	if (top > bottom) moveY = top - bottom;
+	else moveY = (bottom - top) * -1.0f;
 
 	for (auto &point : LinePoints)
 	{
 		point.x += moveX * 0.5f;
 		point.y += moveY * 0.5f;
 	}
+}
+
+void ThePlayer::SetOrigin()
+{
+	float PositionX = 0.0f, PositionY = 0.0f;
+
+	PositionX = LinePoints[0].x;
+	PositionY = LinePoints[0].y;
+
+	for (auto &point : LinePoints)
+	{
+		point.x += Position.x;
+		point.y += Position.y;
+	}
+
+	Position.x += PositionX - LinePoints[0].x;
+	Position.y += PositionY - LinePoints[0].y;
 }
 
 void ThePlayer::SetScale(float scale)
