@@ -47,6 +47,8 @@ bool TheMainMenu::BeginRun()
 	GuiSetStyle(BUTTON, TEXT_ALIGNMENT, TEXT_ALIGN_LEFT);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, GuiGetFont().baseSize * 1.5f);
 
+	NewScene();
+
 	return false;
 }
 
@@ -221,7 +223,7 @@ void TheMainMenu::DrawUI()
 	std::string modelName = "Model: ";
 	modelName.append(ModelFileNameInput);
 
-	if (ModelFileNameInput[0]) GuiLabel({ buttonPreviousModel.x - 50, buttonPreviousModel.y + 40, 200, 30 }, modelName.c_str());
+	if (ModelFileNameInput[0]) GuiLabel({ buttonPreviousModel.x - 150, buttonPreviousModel.y + 50, 200, 30 }, modelName.c_str());
 
 	if (LoadedModels.size() > 0)
 	{
@@ -277,7 +279,7 @@ void TheMainMenu::NewScene()
 	ResetViewport();
 	ResetModels();
 	TextCopy(SceneFileNameInput, "\0");
-	SceneSize = 0;
+	SceneSize = 1;
 }
 
 void TheMainMenu::MakeNewModel()
@@ -286,9 +288,11 @@ void TheMainMenu::MakeNewModel()
 
 	LoadedModels.push_back(LoadedLineModels());
 	LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
-	LoadedModels.back().Model->Position = Player->Position;
 	LoadedModels.back().Model->HideCollision = true;
 	LoadedModels.back().Model->ModelColor = BLUE;
+	LoadedModels.back().Model->SetModel(Player->GetLineModel());
+	LoadedModels.back().Model->Position = Player->Position;
+	LoadedModels.back().Model->Position.z = 0.0f;
 	LoadedModels.back().Name = ModelFileNameInput;
 	Player->ModelIndex = LoadedModels.size() - 1;
 	Player->ClearModel();
@@ -307,18 +311,6 @@ void TheMainMenu::LoadModel(std::string fileName)
 	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
 	TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 	TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
-
-	if (LoadedModels.size() > 0)
-	{
-		LoadedModels.push_back(LoadedLineModels());
-		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
-		LoadedModels.back().Model->Position = Player->Position;
-		LoadedModels.back().Model->HideCollision = true;
-		LoadedModels.back().Model->ModelColor = BLUE;
-		LoadedModels.back().Name = fileName;
-		LoadedModels.back().Model->Enabled = false;
-		Player->ModelIndex = LoadedModels.size() - 1;
-	}
 }
 
 void TheMainMenu::LoadScene()
@@ -392,7 +384,7 @@ void TheMainMenu::LoadScene()
 	else
 	{
 		ShowLoadErrorMessage = true;
-		TextCopy(MessageBoxText, SceneFileNameInput);
+		TextCopy(MessageBoxText, "\0");
 	}
 }
 
@@ -473,7 +465,15 @@ void TheMainMenu::SaveModel()
 		return;
 	}
 
-	CM.SaveLineModel(ModelFileNameInput, Player->GetLineModel());
+	if (LoadedModels.size() > 0)
+	{
+		CM.SaveLineModel(ModelFileNameInput, Player->GetLineModel());
+		LoadedModels.back().Model->SetModel(Player->GetLineModel());
+		LoadedModels.back().Model->Position = Player->Position;
+		LoadedModels.back().Model->Position.z = 0.0f;
+		LoadedModels.back().Name = ModelFileNameInput;
+		Player->ModelIndex = LoadedModels.size() - 1;
+	}
 }
 
 void TheMainMenu::SaveScene()
@@ -487,7 +487,18 @@ void TheMainMenu::SaveScene()
 		return;
 	}
 
-	LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+	if (LoadedModels.size() < SceneSize)
+	{
+		LoadedModels.push_back(LoadedLineModels());
+		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
+		LoadedModels.back().Model->HideCollision = true;
+		LoadedModels.back().Model->ModelColor = BLUE;
+		LoadedModels.back().Model->SetModel(Player->GetLineModel());
+		LoadedModels.back().Model->Position = Player->Position;
+		LoadedModels.back().Model->Position.z = 0.0f;
+		LoadedModels.back().Name = ModelFileNameInput;
+		Player->ModelIndex = LoadedModels.size() - 1;
+	}
 
 	std::vector<Scene> sceneModels;
 	std::string sceneDataSTR;
@@ -595,8 +606,10 @@ void TheMainMenu::LoadSceneInputBox()
 
 		for (auto model : LoadedModels)
 		{
-			//model.Model->Enabled = true;
+			model.Model->Enabled = true;
 		}
+
+		LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	}
 }
 
@@ -688,10 +701,27 @@ void TheMainMenu::CursorDown()
 
 void TheMainMenu::NextModel()
 {
-	if (LoadedModels.size() < 2) return;
+	if (LoadedModels.size() < SceneSize)
+	{
+		LoadedModels.push_back(LoadedLineModels());
+		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
+		LoadedModels.back().Model->HideCollision = true;
+		LoadedModels.back().Model->ModelColor = BLUE;
+		LoadedModels.back().Model->SetModel(Player->GetLineModel());
+		LoadedModels.back().Model->Position = Player->Position;
+		LoadedModels.back().Model->Position.z = 0.0f;
+		LoadedModels.back().Name = ModelFileNameInput;
+		Player->ModelIndex = LoadedModels.size() - 1;
+	}
+	else
+	{
+		LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
+		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+		LoadedModels[Player->ModelIndex].Model->Position.z = 0.0f;
+		LoadedModels[Player->ModelIndex].Name = ModelFileNameInput;
+	}
 
-	LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
-	LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+	if (LoadedModels.size() < 2) return;
 
 	if (Player->ModelIndex > LoadedModels.size() - 2)
 	{
@@ -715,10 +745,27 @@ void TheMainMenu::NextModel()
 
 void TheMainMenu::PreviousModel()
 {
-	if (LoadedModels.size() < 2) return;
+	if (LoadedModels.size() < SceneSize)
+	{
+		LoadedModels.push_back(LoadedLineModels());
+		LoadedModels.back().IDNumber = EM.AddLineModel(LoadedModels.back().Model = DBG_NEW LineModel(), Player->GetLineModel());
+		LoadedModels.back().Model->HideCollision = true;
+		LoadedModels.back().Model->ModelColor = BLUE;
+		LoadedModels.back().Model->SetModel(Player->GetLineModel());
+		LoadedModels.back().Model->Position = Player->Position;
+		LoadedModels.back().Model->Position.z = 0.0f;
+		LoadedModels.back().Name = ModelFileNameInput;
+		Player->ModelIndex = LoadedModels.size() - 1;
+	}
+	else
+	{
+		LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
+		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+		LoadedModels[Player->ModelIndex].Model->Position.z = 0.0f;
+		LoadedModels[Player->ModelIndex].Name = ModelFileNameInput;
+	}
 
-	LoadedModels[Player->ModelIndex].Model->SetModel(Player->GetLineModel());
-	LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+	if (LoadedModels.size() < 2) return;
 
 	if (Player->ModelIndex < 1)
 	{

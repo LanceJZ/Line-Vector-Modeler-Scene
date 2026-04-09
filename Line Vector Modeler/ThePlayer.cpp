@@ -44,7 +44,7 @@ void ThePlayer::Update(float deltaTime)
 {
 	LineModel::Update(deltaTime);
 
-	MirrorModel->Enabled = false;
+	Position.z = -10.0f;
 }
 
 void ThePlayer::FixedUpdate(float deltaTime)
@@ -60,7 +60,7 @@ void ThePlayer::Draw3D()
 
 void ThePlayer::Reset()
 {
-	Position = { 0, 0, 0 };
+	Position = { 0, 0, -10 };
 	Velocity = { 0, 0, 0 };
 	Scale = 1.0f;
 	ModelIndex = -1;
