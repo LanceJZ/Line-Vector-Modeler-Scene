@@ -686,15 +686,8 @@ void TheMainMenu::ZoomIn()
 
 	ZoomLevel = 100 + (GetScreenHeight() - TheCamera.fovy) / 5.0f;
 
-	float scale = ((float)ZoomLevel / 100.0f);
-
-	if (scale > 2.4f) scale *= 0.075f;
-	else if (scale > 2.2f) scale *= 0.15f;
-	else if (scale > 2.0f) scale *= 0.2f;
-	else if (scale > 1.9f) scale *= 0.25f;
-	else if (scale > 1.7f) scale *= 0.33f;
-	else if (scale > 1.5f) scale *= 0.5f;
-	else scale = 1.0f;
+	float zoom = (float)ZoomLevel;
+	float scale = powf(0.997f, zoom * 2.0f);
 
 	Cursor->Scale = scale;
 }
@@ -707,15 +700,8 @@ void TheMainMenu::ZoomOut()
 
 	ZoomLevel = 100 + (GetScreenHeight() - TheCamera.fovy) / 5.0f;
 
-	float scale = ((float)ZoomLevel / 100.0f);
-
-	if (scale > 2.4f) scale *= 0.075f;
-	else if (scale > 2.2f) scale *= 0.15f;
-	else if (scale > 2.0f) scale *= 0.2f;
-	else if (scale > 1.9f) scale *= 0.25f;
-	else if (scale > 1.7f) scale *= 0.33f;
-	else if (scale > 1.5f) scale *= 0.5f;
-	else scale = 1.0f;
+	float zoom = (float)ZoomLevel;
+	float scale = powf(0.997f, zoom * 2.0f);
 
 	Cursor->Scale = scale;
 }
