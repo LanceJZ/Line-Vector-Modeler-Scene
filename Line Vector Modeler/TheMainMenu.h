@@ -45,6 +45,8 @@ private:
 	size_t CursurIndex = 0;
 	size_t SceneSize = 0;
 
+	int ZoomLevel = 100;
+
 	char TextBoxScale[16] = "1.0";
 	char TextBoxXInput[16] = "0";
 	char TextBoxYInput[16] = "0";
@@ -91,6 +93,8 @@ private:
 	void Center();
 	void SetOrigin();
 	void SetScale();
+	void ZoomIn();
+	void ZoomOut();
 	void CursorUp();
 	void CursorDown();
 	void NextModel();

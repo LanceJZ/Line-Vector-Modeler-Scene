@@ -198,6 +198,16 @@ void TheMainMenu::DrawUI()
 
 	if (GuiTextBox(valueBoxScale, TextBoxScale, 16, TextBoxScaleEditMode)) TextBoxScaleEditMode = !TextBoxScaleEditMode;
 
+	Rectangle buttonZoomIn = { labelScale.x - 250, labelScale.y, 110, labelScale.height };
+	Rectangle buttonZoomOut = { buttonZoomIn.x + 120, buttonZoomIn.y, buttonZoomIn.width, buttonZoomIn.height };
+	Rectangle labelZoom = { buttonZoomIn.x, buttonZoomIn.y + 40, 150, buttonZoomIn.height };
+
+	if (GuiButton(buttonZoomIn, GuiIconText(ICON_CAMERA, "Zoom In"))) ZoomIn();
+	if (GuiButton(buttonZoomOut, GuiIconText(ICON_CAMERA, "Zoom Out"))) ZoomOut();
+
+	std::string zoom = "Zoom: " + std::to_string(ZoomLevel) + "%";
+	GuiLabel(labelZoom, zoom.c_str());
+
 	Rectangle textBoxX = { 1000, buttonNewPoint.y - 50, 120, 30 };
 	Rectangle textBoxY = { textBoxX.x + 150, textBoxX.y, textBoxX.width, textBoxX.height };
 	Rectangle labelX = { textBoxX.x - 20, textBoxX.y, 50, textBoxX.height };
@@ -666,6 +676,48 @@ void TheMainMenu::SetScale()
 
 	TextCopy(TextBoxScale, "1.0");
 	UpdateTextBoxesAndCursor();
+}
+
+void TheMainMenu::ZoomIn()
+{
+	TheCamera.fovy -= 100;
+
+	if (TheCamera.fovy < 160) TheCamera.fovy = 160;
+
+	ZoomLevel = 100 + (GetScreenHeight() - TheCamera.fovy) / 5.0f;
+
+	float scale = ((float)ZoomLevel / 100.0f);
+
+	if (scale > 2.4f) scale *= 0.075f;
+	else if (scale > 2.2f) scale *= 0.15f;
+	else if (scale > 2.0f) scale *= 0.2f;
+	else if (scale > 1.9f) scale *= 0.25f;
+	else if (scale > 1.7f) scale *= 0.33f;
+	else if (scale > 1.5f) scale *= 0.5f;
+	else scale = 1.0f;
+
+	Cursor->Scale = scale;
+}
+
+void TheMainMenu::ZoomOut()
+{
+	TheCamera.fovy += 100;
+
+	if (TheCamera.fovy > 1160) TheCamera.fovy = 1160;
+
+	ZoomLevel = 100 + (GetScreenHeight() - TheCamera.fovy) / 5.0f;
+
+	float scale = ((float)ZoomLevel / 100.0f);
+
+	if (scale > 2.4f) scale *= 0.075f;
+	else if (scale > 2.2f) scale *= 0.15f;
+	else if (scale > 2.0f) scale *= 0.2f;
+	else if (scale > 1.9f) scale *= 0.25f;
+	else if (scale > 1.7f) scale *= 0.33f;
+	else if (scale > 1.5f) scale *= 0.5f;
+	else scale = 1.0f;
+
+	Cursor->Scale = scale;
 }
 
 void TheMainMenu::CursorUp()
