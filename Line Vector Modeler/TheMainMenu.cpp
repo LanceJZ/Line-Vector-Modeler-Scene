@@ -147,7 +147,7 @@ void TheMainMenu::DrawUI()
 
 	if (GuiButton(buttonLoadScene, GuiIconText(ICON_FILE_OPEN, "Load scene"))) ShowLoadSceneTextInput = true;
 
-	if (LoadedModels.size() > 0)
+	if (LoadedModels.size() > 1)
 	{
 		if (GuiButton(buttonNewScene, GuiIconText(ICON_FILE_NEW, "New scene"))) NewScene();
 
@@ -157,7 +157,7 @@ void TheMainMenu::DrawUI()
 	Rectangle buttonNewPoint = { 1120, 200, 140, 30 };
 	Rectangle buttonMovePoint = { buttonNewPoint.x, buttonNewPoint.y + 40, buttonNewPoint.width, 30 };
 	Rectangle buttonDeletePoint = { buttonNewPoint.x - 20, buttonNewPoint.y + 700, 160, 30 };
-	//Rectangle buttonNewLine = { buttonNewPoint.x, buttonNewPoint.y + 150, 125,30 };
+	Rectangle buttonDeleteModel = { buttonDeletePoint.x, buttonDeletePoint.y - 40, buttonDeletePoint.width, buttonDeletePoint.height };
 
 	Rectangle buttonUp = { 1120, 300, 120, 30 };
 	Rectangle buttonDown = { buttonUp.x, buttonUp.y + 40, buttonUp.width, buttonUp.height };
@@ -167,6 +167,8 @@ void TheMainMenu::DrawUI()
 	if (GuiButton(buttonNewPoint, GuiIconText(ICON_FILE_ADD, "  New point"))) MakeNewPoint();
 	if (GuiButton(buttonMovePoint, GuiIconText(ICON_CURSOR_MOVE, "  Move point"))) MovePoint();
 	if (GuiButton(buttonDeletePoint, GuiIconText(ICON_CROSS, "  Delete point"))) DeletePoint();
+
+	if (LoadedModels.size() > 1) if (GuiButton(buttonDeleteModel, GuiIconText(ICON_FILE_DELETE, "Delete model"))) DeletePlayerFromScene();
 
 	if (CheckMirrorValidity())
 	{
@@ -237,7 +239,7 @@ void TheMainMenu::DrawUI()
 
 	if (ModelFileName[0]) GuiLabel({ buttonPreviousModel.x - 150, buttonPreviousModel.y + 50, 200, 30 }, modelName.c_str());
 
-	if (LoadedModels.size() > 0)
+	if (LoadedModels.size() > 1)
 	{
 		if (GuiButton(buttonNextModel, GuiIconText(ICON_ARROW_RIGHT, "  Next"))) NextModel();
 		if (GuiButton(buttonPreviousModel, GuiIconText(ICON_ARROW_LEFT, "Previous"))) PreviousModel();
@@ -744,13 +746,13 @@ void TheMainMenu::NextModel()
 
 	if (Player->ModelIndex > LoadedModels.size() - 2)
 	{
-		Player->ModelIndex = 0;
 		LoadedModels.back().Model->Enabled = true;
+		Player->ModelIndex = 0;
 	}
 	else
 	{
+		LoadedModels[Player->ModelIndex].Model->Enabled = true;
 		Player->ModelIndex++;
-		LoadedModels[Player->ModelIndex - 1].Model->Enabled = true;
 	}
 
 	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
@@ -758,7 +760,6 @@ void TheMainMenu::NextModel()
 	CursurIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
-
 	UpdateTextBoxesAndCursor();
 }
 
@@ -780,13 +781,13 @@ void TheMainMenu::PreviousModel()
 
 	if (Player->ModelIndex < 1)
 	{
-		Player->ModelIndex = LoadedModels.size() - 1;
 		LoadedModels[0].Model->Enabled = true;
+		Player->ModelIndex = LoadedModels.size() - 1;
 	}
 	else
 	{
+		LoadedModels[Player->ModelIndex].Model->Enabled = true;
 		Player->ModelIndex--;
-		LoadedModels[Player->ModelIndex + 1].Model->Enabled = true;
 	}
 
 	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
@@ -794,7 +795,6 @@ void TheMainMenu::PreviousModel()
 	CursurIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
-
 	UpdateTextBoxesAndCursor();
 }
 
@@ -809,6 +809,39 @@ void TheMainMenu::AddPlayerToScene()
 	LoadedModels.back().Model->Position.z = 0.0f;
 	LoadedModels.back().Name = ModelFileName;
 	Player->ModelIndex = LoadedModels.size() - 1;
+}
+
+void TheMainMenu::DeletePlayerFromScene()
+{
+	if (LoadedModels.size() < 2) return;
+
+	size_t modelIndex = Player->ModelIndex;
+
+	LoadedModels[modelIndex].Model->Enabled = false;
+
+	if (Player->ModelIndex < 1)
+	{
+		EM.DeleteEntity(LoadedModels[modelIndex].IDNumber);
+		LoadedModels.erase(LoadedModels.begin());
+		modelIndex = LoadedModels.size() - 1;
+	}
+	else
+	{
+		EM.DeleteEntity(LoadedModels[modelIndex].IDNumber);
+		LoadedModels.erase(LoadedModels.begin() + modelIndex);
+		modelIndex--;
+	}
+
+	for (size_t i = 0; i < LoadedModels.size(); i++) LoadedModels[i].IDNumber--;
+
+	Player->SetModel(LoadedModels[modelIndex].Model->GetLineModel());
+	Player->Position = LoadedModels[modelIndex].Model->Position;
+	Player->Position.z = -10.0f;
+	Player->ModelIndex = modelIndex;
+	TextCopy(ModelFileName, LoadedModels[modelIndex].Name.c_str());
+	CursurIndex = Player->GetLineModel().size() - 1;
+	SceneSize--;
+	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::UpdateTextBoxesAndCursor()

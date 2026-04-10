@@ -100,6 +100,7 @@ private:
 	void NextModel();
 	void PreviousModel();
 	void AddPlayerToScene();
+	void DeletePlayerFromScene();
 	void UpdateTextBoxesAndCursor();
 	void UpdateCursor();
 

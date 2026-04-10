@@ -185,7 +185,6 @@ void EntityManager::SetTimer(size_t id, float amount)
 
 void EntityManager::DeleteEntity(size_t id)
 {
-	delete(Entities[id]);
 	Entities.erase(Entities.begin() + id);
 }
 
