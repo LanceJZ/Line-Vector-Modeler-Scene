@@ -68,6 +68,7 @@ void TheMainMenu::Update()
 	if (ShowSaveTextInput) SaveAsInputBox();
 
 	if (MirrorCheckBox) Mirror();
+	else Player->MirrorModel->Enabled = false;
 
 	if (ShowLoadErrorMessage) DrawLoadErrorMessage();
 

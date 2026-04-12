@@ -22,7 +22,7 @@ bool ThePlayer::BeginRun()
 
 	MirrorModel->Enabled = false;
 	MirrorModel->Alpha = 175;
-	MirrorModel->ModelColor = LIGHTGRAY;
+	MirrorModel->ModelColor = { 180, 180, 255, 250 };
 	MirrorModel->HideCollision = true;
 
 	return false;
@@ -121,7 +121,6 @@ void ThePlayer::Mirror()
 		if (point.y < 0) return;
 	}
 
-	// Duplicate the points and reverse them on the Y axis, end to start.
 	int startPoint = LinePoints.size() - 1;
 
 	for (int i = startPoint; i > -1; i--)
@@ -131,6 +130,7 @@ void ThePlayer::Mirror()
 		Mirroredpoints.push_back({ LinePoints[i].x, y, LinePoints[i].z });
 	}
 
+
 	MirrorModel->SetModel(Mirroredpoints);
 	MirrorModel->Enabled = true;
 }
@@ -139,18 +139,7 @@ void ThePlayer::ApplyMirror()
 {
 	MirrorModel->Enabled = false;
 
-	std::vector<Vector3> Mirroredpoints;
-
-	int startPoint = LinePoints.size() - 2;
-
-	for (int i = startPoint; i > -1; i--)
-	{
-		float y = LinePoints[i].y;
-		y *= -1.0f;
-		Mirroredpoints.push_back({ LinePoints[i].x, y, LinePoints[i].z });
-	}
-
-	for (auto &point : Mirroredpoints)
+	for (auto &point : MirrorModel->GetLineModel())
 	{
 		LinePoints.push_back({ point.x, point.y, point.z });
 	}

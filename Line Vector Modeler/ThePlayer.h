@@ -9,6 +9,7 @@ public:
 	virtual ~ThePlayer();
 
 	size_t ModelIndex = 0;
+	LineModel* MirrorModel = nullptr;
 
 	bool Initialize();
 	bool BeginRun();
@@ -35,8 +36,6 @@ public:
 	void SetScale(float scale);
 
 private:
-	LineModel* MirrorModel = nullptr;
-
 
 	void Gamepad();
 	void Keyboard();
