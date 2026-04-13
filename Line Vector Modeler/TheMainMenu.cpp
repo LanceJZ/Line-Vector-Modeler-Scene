@@ -543,6 +543,8 @@ void TheMainMenu::LoadModelInputBox()
 		model.Model->Enabled = false;
 	}
 
+	MirrorCheckBox = false;
+
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
 	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_OPEN, "Load file"), "File name:", TextOkCancel, TextInput, 255, NULL);
 
@@ -591,6 +593,8 @@ void TheMainMenu::LoadSceneInputBox()
 		model.Model->Enabled = false;
 	}
 
+	MirrorCheckBox = false;
+
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
 	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_OPEN, "Load file"), "File name:", TextOkCancel, TextInput, 255, NULL);
 
@@ -628,7 +632,7 @@ void TheMainMenu::LoadSceneInputBox()
 			model.Model->Enabled = true;
 		}
 
-		LoadedModels[Player->ModelIndex].Model->Enabled = false;
+		if (LoadedModels.size() > 1) LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	}
 }
 
