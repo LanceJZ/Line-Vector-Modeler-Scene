@@ -846,7 +846,7 @@ void TheMainMenu::AddPlayerToScene()
 	LoadedModels.back().Model->Position = Player->Position;
 	LoadedModels.back().Model->Position.z = 0.0f;
 	LoadedModels.back().Name = ModelFileName;
-	SceneSize == LoadedModels.size();
+	SceneSize = LoadedModels.size();
 	Player->ModelIndex = LoadedModels.size() - 1;
 }
 
