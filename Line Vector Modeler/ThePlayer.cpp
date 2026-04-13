@@ -65,7 +65,7 @@ void ThePlayer::Reset()
 	Scale = 1.0f;
 	ModelIndex = -1;
 	LinePoints.clear();
-	Enabled = false;
+	Enabled = true;
 	MirrorModel->Enabled = false;
 	std::vector<Vector3> empty;
 	MirrorModel->SetModel(empty);
@@ -138,6 +138,33 @@ void ThePlayer::Mirror()
 void ThePlayer::ApplyMirror()
 {
 	MirrorModel->Enabled = false;
+
+	if (LinePoints.back().y < 0.001f)
+	{
+		MirrorModel->GetLineModel().erase(MirrorModel->GetLineModel().begin());
+	}
+	else if (LinePoints.front().y < 0.001f)
+	{
+		MirrorModel->GetLineModel().erase(MirrorModel->GetLineModel().end() - 1);
+
+		std::vector<Vector3> Reversepoints;
+
+		for (int i = MirrorModel->GetLineModel().size() - 1; i > -1; i--)
+		{
+			Reversepoints.push_back(MirrorModel->GetLineModel()[i]);
+		}
+
+		MirrorModel->SetModel(Reversepoints);
+
+		Reversepoints.clear();
+
+		for (int i = LinePoints.size() - 1; i > -1; i--)
+		{
+			Reversepoints.push_back(LinePoints[i]);
+		}
+
+		LinePoints = Reversepoints;
+	}
 
 	for (auto &point : MirrorModel->GetLineModel())
 	{

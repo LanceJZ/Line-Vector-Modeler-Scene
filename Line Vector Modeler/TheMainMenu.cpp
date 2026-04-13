@@ -107,7 +107,7 @@ void TheMainMenu::Update()
 
 		int point = std::stoi(TextBoxPointIntput);
 
-		if (point >= 0 && point < Player->GetLineModel().size()) CursurIndex = point;
+		if (point >= 0 && point < Player->GetLineModel().size()) CursorIndex = point;
 	}
 
 	Player->HideCollision = !CollisionCheckBox;
@@ -286,8 +286,10 @@ void TheMainMenu::ResetViewport()
 	TextCopy(TextBoxYInput, "0.0");
 	TextCopy(TextBoxPointIntput, "1.0");
 
-	CursurIndex = 0;
-	
+	CursorIndex = 0;
+	ZoomLevel = 100;
+	TheCamera.fovy = (float)GetScreenHeight();
+	Cursor->Scale = 1.0f;
 	CollisionCheckBox = false;
 }
 
@@ -304,10 +306,24 @@ void TheMainMenu::MakeNewModel()
 {
 	if (!ModelFileName[0]) return;
 
-	AddPlayerToScene();
+	bool fileNotFound = true;
+
+	for (auto &model : LoadedModels)
+	{
+		if (model.Name == ModelFileName) fileNotFound = false;
+	}
+
+	if (fileNotFound) AddPlayerToScene();
+	else
+	{
+		LoadedModels[Player->ModelIndex].Model->Enabled = true;
+		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
+	}
+
 	Player->ClearModel();
-	SceneSize++;
-	CursurIndex = 0;
+	Player->Reset();
+	SceneSize = LoadedModels.size();
+	CursorIndex = 0;
 	TextCopy(TextBoxScale, "1.0");
 	TextCopy(TextBoxPointIntput, "1.0");
 	TextCopy(ModelFileName, "\0");
@@ -317,9 +333,13 @@ void TheMainMenu::MakeNewModel()
 void TheMainMenu::LoadModel(std::string fileName)
 {
 	Player->SetModel(CM.LoadAndGetLineModel(fileName));
-	CursurIndex = Player->GetLineModel().size() - 1;
-	Cursor->Position = Player->GetLineModel()[CursurIndex];
-	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
+
+	if (LoadedModels.size() > 0) AddPlayerToScene();
+
+	SceneSize = LoadedModels.size();
+	CursorIndex = Player->GetLineModel().size() - 1;
+	Cursor->Position = Player->GetLineModel()[CursorIndex];
+	TextCopy(TextBoxPointIntput, std::to_string(CursorIndex).c_str());
 	TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 	TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
 }
@@ -384,9 +404,9 @@ void TheMainMenu::LoadScene()
 		Player->SetModel((LoadedModels[0].Model->GetLineModel()));
 		Player->Position = LoadedModels[0].Model->Position;
 		LoadedModels[0].Model->Enabled = false;
+		CursorIndex = Player->GetLineModel().size() - 1;
 		TextCopy(ModelFileName, LoadedModels[0].Name.c_str());
-		CursurIndex = Player->GetLineModel().size() - 1;
-		TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
+		TextCopy(TextBoxPointIntput, std::to_string(CursorIndex).c_str());
 		TextCopy(TextBoxXInput, std::to_string(Cursor->Position.x).c_str());
 		TextCopy(TextBoxYInput, std::to_string(Cursor->Position.y).c_str());
 		UpdateTextBoxesAndCursor();
@@ -475,6 +495,8 @@ void TheMainMenu::SaveModel()
 		return;
 	}
 
+	if (!DirectoryExists("Models")) MakeDirectory("Models");
+
 	CM.SaveLineModel(ModelFileName, Player->GetLineModel());
 
 	if (LoadedModels.size() < SceneSize) AddPlayerToScene();
@@ -502,6 +524,8 @@ void TheMainMenu::SaveScene()
 		sceneModels.back().Position = model.Model->Position;
 		sceneModels.back().Name = model.Name;
 	}
+
+	if (!DirectoryExists("Scenes")) MakeDirectory("Scenes");
 
 	CM.SaveScene(SceneFileNameInput, sceneModels);
 
@@ -613,30 +637,33 @@ void TheMainMenu::MakeNewPoint()
 	float x = std::stof(TextBoxXInput);
 	float y = std::stof(TextBoxYInput);
 
-	Player->AddPointAt({ x, y, 0 }, CursurIndex);
-	if (CursurIndex < Player->GetLineModel().size() - 1) CursurIndex++;
-	else CursurIndex = Player->GetLineModel().size() - 1;
+	Player->AddPointAt({ x, y, 0 }, CursorIndex);
+	if (CursorIndex < Player->GetLineModel().size() - 1) CursorIndex++;
+	else CursorIndex = Player->GetLineModel().size() - 1;
 	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::MovePoint()
 {
-	Player->MovePoint({ Cursor->Position.x - Player->Position.x, Cursor->Position.y - Player->Position.y, 0 }, CursurIndex);
+	Player->MovePoint({ Cursor->Position.x - Player->Position.x, Cursor->Position.y - Player->Position.y, 0 }, CursorIndex);
 }
 
 void TheMainMenu::DeletePoint()
 {
 	if (Player->GetLineModel().size() < 1)
 	{
-		CursurIndex = 0;
-		UpdateTextBoxesAndCursor();
-		return;
+		CursorIndex = 0;
 	}
+	else
+	{
+		Player->DeletePoint(CursorIndex);
 
-	Player->DeletePoint(CursurIndex);
-
-	if (CursurIndex > Player->GetLineModel().size() - 1) CursurIndex = Player->GetLineModel().size() - 1;
-	else CursurIndex--;
+		if (CursorIndex > Player->GetLineModel().size() - 1) CursorIndex = Player->GetLineModel().size() - 1;
+		else
+		{
+			if (CursorIndex > 0) CursorIndex--;
+		}
+	}
 
 	UpdateTextBoxesAndCursor();
 }
@@ -650,7 +677,7 @@ void TheMainMenu::ApplyMirror()
 {
 	MirrorCheckBox = false;
 	Player->ApplyMirror();
-	CursurIndex = Player->GetLineModel().size() - 1;
+	CursorIndex = Player->GetLineModel().size() - 1;
 	UpdateTextBoxesAndCursor();
 }
 
@@ -690,7 +717,12 @@ void TheMainMenu::ZoomIn()
 	ZoomLevel = 100 + (GetScreenHeight() - TheCamera.fovy) / 5.0f;
 
 	float zoom = (float)ZoomLevel;
-	float scale = powf(0.997f, zoom * 2.0f);
+	float scale = powf(0.9975f, zoom);
+
+	if (zoom > 160) scale = powf(0.996f, zoom);
+	if (zoom > 200) scale = powf(0.995f, zoom);
+	if (zoom > 220) scale = powf(0.994f, zoom);
+	if (zoom > 240) scale = powf(0.993f, zoom);
 
 	Cursor->Scale = scale;
 }
@@ -704,7 +736,12 @@ void TheMainMenu::ZoomOut()
 	ZoomLevel = 100 + (GetScreenHeight() - TheCamera.fovy) / 5.0f;
 
 	float zoom = (float)ZoomLevel;
-	float scale = powf(0.997f, zoom * 2.0f);
+	float scale = powf(0.9975f, zoom);
+
+	if (zoom > 160) scale = powf(0.996f, zoom);
+	if (zoom > 200) scale = powf(0.995f, zoom);
+	if (zoom > 220) scale = powf(0.994f, zoom);
+	if (zoom > 240) scale = powf(0.993f, zoom);
 
 	Cursor->Scale = scale;
 }
@@ -713,7 +750,7 @@ void TheMainMenu::CursorUp()
 {
 	if (Player->GetLineModel().size() < 1) return;
 
-	if (CursurIndex > 0) CursurIndex--;
+	if (CursorIndex > 0) CursorIndex--;
 	else return;
 
 	UpdateTextBoxesAndCursor();
@@ -723,7 +760,7 @@ void TheMainMenu::CursorDown()
 {
 	if (Player->GetLineModel().size() < 1) return;
 
-	if (CursurIndex < Player->GetLineModel().size() - 1) CursurIndex++;
+	if (CursorIndex < Player->GetLineModel().size() - 1) CursorIndex++;
 	else return;
 
 	UpdateTextBoxesAndCursor();
@@ -758,7 +795,7 @@ void TheMainMenu::NextModel()
 
 	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
 	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
-	CursurIndex = Player->GetLineModel().size() - 1;
+	CursorIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
 	UpdateTextBoxesAndCursor();
@@ -793,7 +830,7 @@ void TheMainMenu::PreviousModel()
 
 	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
 	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
-	CursurIndex = Player->GetLineModel().size() - 1;
+	CursorIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
 	UpdateTextBoxesAndCursor();
@@ -809,6 +846,7 @@ void TheMainMenu::AddPlayerToScene()
 	LoadedModels.back().Model->Position = Player->Position;
 	LoadedModels.back().Model->Position.z = 0.0f;
 	LoadedModels.back().Name = ModelFileName;
+	SceneSize == LoadedModels.size();
 	Player->ModelIndex = LoadedModels.size() - 1;
 }
 
@@ -840,7 +878,7 @@ void TheMainMenu::DeletePlayerFromScene()
 	Player->Position.z = -10.0f;
 	Player->ModelIndex = modelIndex;
 	TextCopy(ModelFileName, LoadedModels[modelIndex].Name.c_str());
-	CursurIndex = Player->GetLineModel().size() - 1;
+	CursorIndex = Player->GetLineModel().size() - 1;
 	SceneSize--;
 	UpdateTextBoxesAndCursor();
 }
@@ -856,9 +894,9 @@ void TheMainMenu::UpdateTextBoxesAndCursor()
 		return;
 	}
 
-	TextCopy(TextBoxXInput, std::to_string(Player->GetLineModel()[CursurIndex].x).c_str());
-	TextCopy(TextBoxYInput, std::to_string(Player->GetLineModel()[CursurIndex].y).c_str());
-	TextCopy(TextBoxPointIntput, std::to_string(CursurIndex).c_str());
+	TextCopy(TextBoxXInput, std::to_string(Player->GetLineModel()[CursorIndex].x).c_str());
+	TextCopy(TextBoxYInput, std::to_string(Player->GetLineModel()[CursorIndex].y).c_str());
+	TextCopy(TextBoxPointIntput, std::to_string(CursorIndex).c_str());
 }
 
 void TheMainMenu::UpdateCursor()

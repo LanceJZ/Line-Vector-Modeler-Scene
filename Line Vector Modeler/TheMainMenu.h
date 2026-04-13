@@ -42,7 +42,7 @@ private:
 	bool SaveModelFile = false;
 	bool SaveSceneFile = false;
 
-	size_t CursurIndex = 0;
+	size_t CursorIndex = 0;
 	size_t SceneSize = 0;
 
 	int ZoomLevel = 100;
