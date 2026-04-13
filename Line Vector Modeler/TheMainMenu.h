@@ -9,6 +9,7 @@ struct LoadedLineModels
 	LineModel *Model = {};
 	std::string Name = {};
 	size_t IDNumber = 0;
+	bool Edited = false;
 };
 
 class TheMainMenu : public Common
@@ -41,6 +42,7 @@ private:
 	bool LoadSceneFile = false;
 	bool SaveModelFile = false;
 	bool SaveSceneFile = false;
+	bool ModelEdited = false;
 
 	size_t CursorIndex = 0;
 	size_t SceneSize = 0;

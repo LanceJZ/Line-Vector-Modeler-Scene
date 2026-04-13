@@ -237,6 +237,7 @@ void TheMainMenu::DrawUI()
 
 	std::string modelName = "Model: ";
 	modelName.append(ModelFileName);
+	if (ModelEdited) modelName.append("*");
 
 	if (ModelFileName[0]) GuiLabel({ buttonPreviousModel.x - 150, buttonPreviousModel.y + 50, 200, 30 }, modelName.c_str());
 
@@ -276,6 +277,7 @@ void TheMainMenu::ResetModels()
 
 void TheMainMenu::ResetViewport()
 {
+	ModelEdited = false;
 	Player->Reset();
 	Cursor->X(0.0f);
 	Cursor->X(0.0f);
@@ -320,6 +322,7 @@ void TheMainMenu::MakeNewModel()
 		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
 	}
 
+	ModelEdited = false;
 	Player->ClearModel();
 	Player->Reset();
 	SceneSize = LoadedModels.size();
@@ -332,6 +335,7 @@ void TheMainMenu::MakeNewModel()
 
 void TheMainMenu::LoadModel(std::string fileName)
 {
+	ModelEdited = false;
 	Player->SetModel(CM.LoadAndGetLineModel(fileName));
 
 	if (LoadedModels.size() > 0) AddPlayerToScene();
@@ -502,6 +506,7 @@ void TheMainMenu::SaveModel()
 	if (LoadedModels.size() < SceneSize) AddPlayerToScene();
 
 	SaveModelFile = false;
+	ModelEdited = false;
 }
 
 void TheMainMenu::SaveScene()
@@ -544,6 +549,7 @@ void TheMainMenu::LoadModelInputBox()
 	}
 
 	MirrorCheckBox = false;
+	ModelEdited = false;
 
 	DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(DARKGRAY, 0.8f));
 	int result = GuiTextInputBox(TextInputBoxLocation, GuiIconText(ICON_FILE_OPEN, "Load file"), "File name:", TextOkCancel, TextInput, 255, NULL);
@@ -613,6 +619,7 @@ void TheMainMenu::LoadSceneInputBox()
 			return;
 		}
 
+		ModelEdited = false;
 		ResetViewport();
 		TextCopy(SceneFileNameInput, TextInput);
 		LoadScene();
@@ -638,6 +645,8 @@ void TheMainMenu::LoadSceneInputBox()
 
 void TheMainMenu::MakeNewPoint()
 {
+	ModelEdited = true;
+
 	float x = std::stof(TextBoxXInput);
 	float y = std::stof(TextBoxYInput);
 
@@ -649,11 +658,16 @@ void TheMainMenu::MakeNewPoint()
 
 void TheMainMenu::MovePoint()
 {
+	ModelEdited = true;
+
 	Player->MovePoint({ Cursor->Position.x - Player->Position.x, Cursor->Position.y - Player->Position.y, 0 }, CursorIndex);
+
 }
 
 void TheMainMenu::DeletePoint()
 {
+	ModelEdited = true;
+
 	if (Player->GetLineModel().size() < 1)
 	{
 		CursorIndex = 0;
@@ -679,6 +693,7 @@ void TheMainMenu::Mirror()
 
 void TheMainMenu::ApplyMirror()
 {
+	ModelEdited = true;
 	MirrorCheckBox = false;
 	Player->ApplyMirror();
 	CursorIndex = Player->GetLineModel().size() - 1;
@@ -687,23 +702,27 @@ void TheMainMenu::ApplyMirror()
 
 void TheMainMenu::Flip()
 {
+	ModelEdited = true;
 	Player->Flip();
 }
 
 void TheMainMenu::Center()
 {
+	ModelEdited = true;
 	Player->Center();
 	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::SetOrigin()
 {
+	ModelEdited = true;
 	Player->SetOrigin();
 	UpdateTextBoxesAndCursor();
 }
 
 void TheMainMenu::SetScale()
 {
+	ModelEdited = true;
 	float scale = std::stof(TextBoxScale);
 
 	if (scale > 0.0f && scale < 100.0f) Player->SetScale(std::stof(TextBoxScale));
@@ -782,6 +801,7 @@ void TheMainMenu::NextModel()
 		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
 		LoadedModels[Player->ModelIndex].Model->Position.z = 0.0f;
 		LoadedModels[Player->ModelIndex].Name = ModelFileName;
+		LoadedModels[Player->ModelIndex].Edited = ModelEdited;
 	}
 
 	if (LoadedModels.size() < 2) return;
@@ -799,6 +819,7 @@ void TheMainMenu::NextModel()
 
 	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
 	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
+	ModelEdited = LoadedModels[Player->ModelIndex].Edited;
 	CursorIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
@@ -817,6 +838,7 @@ void TheMainMenu::PreviousModel()
 		LoadedModels[Player->ModelIndex].Model->Position = Player->Position;
 		LoadedModels[Player->ModelIndex].Model->Position.z = 0.0f;
 		LoadedModels[Player->ModelIndex].Name = ModelFileName;
+		LoadedModels[Player->ModelIndex].Edited = ModelEdited;
 	}
 
 	if (LoadedModels.size() < 2) return;
@@ -834,6 +856,7 @@ void TheMainMenu::PreviousModel()
 
 	Player->SetModel(LoadedModels[Player->ModelIndex].Model->GetLineModel());
 	Player->Position = LoadedModels[Player->ModelIndex].Model->Position;
+	ModelEdited = LoadedModels[Player->ModelIndex].Edited;
 	CursorIndex = Player->GetLineModel().size() - 1;
 	LoadedModels[Player->ModelIndex].Model->Enabled = false;
 	TextCopy(ModelFileName, LoadedModels[Player->ModelIndex].Name.c_str());
