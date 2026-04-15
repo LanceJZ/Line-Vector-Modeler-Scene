@@ -116,7 +116,7 @@ void ThePlayer::Mirror()
 	std::vector<Vector3> Mirroredpoints;
 
 	// Make sure Y does not go below 0.
-	for (auto point : LinePoints)
+	for (const auto point : LinePoints)
 	{
 		if (point.y < 0) return;
 	}
@@ -166,7 +166,7 @@ void ThePlayer::ApplyMirror()
 		LinePoints = Reversepoints;
 	}
 
-	for (auto &point : MirrorModel->GetLineModel())
+	for (const auto &point : MirrorModel->GetLineModel())
 	{
 		LinePoints.push_back({ point.x, point.y, point.z });
 	}
@@ -184,7 +184,7 @@ void ThePlayer::Center()
 {
 	float right = 0.0f, left = 0.0f, top = 0.0f, bottom = 0.0f;
 
-	for (auto &point : LinePoints)
+	for (const auto &point : LinePoints)
 	{
 		if (point.x > right) right = point.x;
 		if (point.x < left) left = point.x;

@@ -310,7 +310,7 @@ void TheMainMenu::MakeNewModel()
 
 	bool fileNotFound = true;
 
-	for (auto &model : LoadedModels)
+	for (const auto &model : LoadedModels)
 	{
 		if (model.Name == ModelFileName) fileNotFound = false;
 	}
@@ -380,7 +380,7 @@ void TheMainMenu::LoadScene()
 
 		bool fileTest = true;
 
-		for (auto& name : names)
+		for (const auto& name : names)
 		{
 			if (name.size() == 0) fileTest = false;
 		}
@@ -428,7 +428,7 @@ void TheMainMenu::SaveAsInputBox()
 	Crosshair->Enabled = false;
 	Cursor->Enabled = false;
 
-	for (auto model : LoadedModels)
+	for (const auto& model : LoadedModels)
 	{
 		model.Model->Enabled = false;
 	}
@@ -478,7 +478,7 @@ void TheMainMenu::SaveAsInputBox()
 		Cursor->Enabled = true;
 		Crosshair->Enabled = true;
 
-		for (auto model : LoadedModels)
+		for (const auto& model : LoadedModels)
 		{
 			model.Model->Enabled = true;
 		}
@@ -523,7 +523,7 @@ void TheMainMenu::SaveScene()
 	std::vector<Scene> sceneModels;
 	std::string sceneDataSTR;
 
-	for (auto model : LoadedModels)
+	for (const auto& model : LoadedModels)
 	{
 		sceneModels.push_back(Scene());
 		sceneModels.back().Position = model.Model->Position;
@@ -543,7 +543,7 @@ void TheMainMenu::LoadModelInputBox()
 	Crosshair->Enabled = false;
 	Cursor->Enabled = false;
 
-	for (auto model : LoadedModels)
+	for (const auto& model : LoadedModels)
 	{
 		model.Model->Enabled = false;
 	}
@@ -579,7 +579,7 @@ void TheMainMenu::LoadModelInputBox()
 		CollisionCheckBox = false;
 		TextCopy(TextInput, "\0");
 
-		for (auto model : LoadedModels)
+		for (const auto& model : LoadedModels)
 		{
 			model.Model->Enabled = true;
 		}
@@ -594,7 +594,7 @@ void TheMainMenu::LoadSceneInputBox()
 	Crosshair->Enabled = false;
 	Cursor->Enabled = false;
 
-	for (auto model : LoadedModels)
+	for (const auto model : LoadedModels)
 	{
 		model.Model->Enabled = false;
 	}
@@ -634,7 +634,7 @@ void TheMainMenu::LoadSceneInputBox()
 		Crosshair->Enabled = true;
 		CollisionCheckBox = false;
 
-		for (auto model : LoadedModels)
+		for (const auto& model : LoadedModels)
 		{
 			model.Model->Enabled = true;
 		}
@@ -1007,7 +1007,7 @@ bool TheMainMenu::CheckMirrorValidity()
 	if (Player->GetLineModel().size() < 1) return false;
 
 	// Make sure Y does not go below 0.
-	for (auto point : Player->GetLineModel())
+	for (const auto &point : Player->GetLineModel())
 	{
 		if (point.y < 0) return false;
 	}
